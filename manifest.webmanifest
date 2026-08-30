@@ -1,0 +1,27 @@
+{
+  "id": "./",
+  "name": "MINISH TRACKER",
+  "short_name": "MINISH",
+  "description": "주간 목표와 루틴을 기록하고 회고하는 트래커",
+  "lang": "ko-KR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f8ff",
+  "theme_color": "#f4f8ff",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
