@@ -9,6 +9,7 @@
   let events=[],state={entries:[],categories:[]},dbPromise=null,syncRunning=false,syncTimer=null,ready=false
   let editId=null,editEventId=null,newEntryId=null,selectedType=null,deleteId=null,showTrash=false,showAll=false,pendingEvent=null
   let currentStatus='가계부 저장소 확인 중…'
+  let chartWeeks=[],selectedSpendingWeek=null
   function status(message,error=false){currentStatus=message;$('financeStatus').textContent=message;$('financeStatus').classList.toggle('error',error)}
 
   function database() {
@@ -114,15 +115,49 @@
     }catch(error){status(error.message||'동기화 실패 · 기기 기록은 유지됩니다.',true);throw error}
     finally{syncRunning=false}
   }
+  function selectSpendingWeek(key) {
+    const week=chartWeeks.find(w=>w.key===key)
+    if(!week)return
+    selectedSpendingWeek=key
+    $('financeWeekDetail').textContent=`${week.from} – ${week.to} · ${week.key.split('-')[1]} · ${money(week.amount)}`
+    $('financeChart').querySelectorAll('[data-spending-week]').forEach(el=>{
+      const active=el.dataset.spendingWeek===key
+      el.classList.toggle('selected',active)
+      if(el.tagName==='BUTTON')el.setAttribute('aria-pressed',String(active))
+    })
+  }
+  function renderSpendingChart() {
+    if(!chartWeeks.length)return
+    const width=Math.max(260,$('financeChart').clientWidth),left=58,right=12,top=18,bottom=166
+    const peak=Math.max(0,...chartWeeks.map(w=>w.amount))
+    const magnitude=peak?10**Math.floor(Math.log10(peak)):10000
+    const ceiling=peak?Math.ceil(peak/magnitude)*magnitude:10000
+    const compact=n=>n>=100000000?`${+(n/100000000).toFixed(1)}억`:n>=10000?`${+(n/10000).toFixed(1)}만`:n.toLocaleString('ko-KR')
+    const x=i=>left+(width-left-right)*(i+.5)/chartWeeks.length
+    const y=amount=>bottom-(bottom-top)*amount/ceiling
+    const description='주차별 지출 꺾은선그래프: '+chartWeeks.map(w=>`${w.from}부터 ${w.to}: ${money(w.amount)}`).join(', ')
+    const grid=[0,ceiling/2,ceiling].map(amount=>`<g><line x1="${left}" y1="${y(amount)}" x2="${width-right}" y2="${y(amount)}" class="spending-grid-line"/><text x="${left-8}" y="${y(amount)+4}" text-anchor="end" class="spending-axis">${compact(amount)}</text></g>`).join('')
+    const dots=chartWeeks.map((w,i)=>`<circle cx="${x(i)}" cy="${y(w.amount)}" r="5" class="spending-point" data-spending-week="${w.key}"><title>${w.from} – ${w.to}: ${money(w.amount)}</title></circle>`).join('')
+    $('financeChart').innerHTML=`<span class="spending-unit">단위: 원</span><svg class="spending-line-chart" viewBox="0 0 ${width} 184" role="img" aria-label="${description}">${grid}<polyline class="spending-line" points="${chartWeeks.map((w,i)=>`${x(i)},${y(w.amount)}`).join(' ')}"/>${dots}</svg><div class="spending-week-picker">${chartWeeks.map(w=>`<button type="button" data-spending-week="${w.key}" aria-label="${w.from}부터 ${w.to} 지출 ${money(w.amount)}" aria-pressed="false"><strong>${w.from.slice(5).replace('-','/')}</strong><small>${w.key.split('-')[1]}</small></button>`).join('')}</div><p id="financeWeekDetail" class="spending-week-detail" aria-live="polite"></p>${peak?'':'<p class="spending-no-data">이 8주에는 기록된 지출이 없어요.</p>'}`
+    selectSpendingWeek(chartWeeks.some(w=>w.key===selectedSpendingWeek)?selectedSpendingWeek:chartWeeks.at(-1).key)
+  }
+  function renderCategorySpending(month) {
+    const report=C.spendingCategories(state.entries,state.categories,month)
+    $('financeCategoryMonth').textContent=`${month.slice(0,4)}년 ${Number(month.slice(5))}월 · 지출(−)만`
+    $('financeCategoryTotal').textContent=money(report.total)
+    $('financeCategoryCount').textContent=`${report.rows.length}개 카테고리 · ${report.count}건`
+    $('financeCategorySpending').innerHTML=report.rows.length?report.rows.map(row=>`<li class="category-spending-row"><div class="category-spending-heading"><span class="category-spending-name" title="${escape(row.name)}">${escape(row.name)}</span><strong>${money(row.amount)}</strong></div><div class="category-spending-meta"><span>${row.count}건</span><span>${row.pct.toFixed(1)}%</span></div><div class="category-spending-track" aria-hidden="true"><div style="width:${row.pct}%"></div></div></li>`).join(''):'<li class="review-empty">이 달에는 기록된 지출이 없어요.</li>'
+  }
   function render() {
     const month=$('financeMonth').value
     const entries=state.entries.filter(e=>showAll||e.date.startsWith(month))
     const sums=C.totals(entries)
     $('financeSummary').innerHTML=['income','expense','investment','net'].map(type=>`<article class="finance-total ${type}"><span>${names[type]||'기록 합계'}</span><strong>${type==='net'?(sums.net<0?'−':'+'):symbols[type]} ${money(Math.abs(sums[type]))}</strong></article>`).join('')
-    const anchor=showAll?C.dateKey(new Date()):C.dateKey(new Date(Number(month.slice(0,4)),Number(month.slice(5)),0))
-    const weeks=C.spendingWeeks(state.entries,anchor),max=Math.max(1,...weeks.map(w=>w.amount))
-    $('financeChart').innerHTML=weeks.map(w=>`<div class="spending-week"><span>${money(w.amount)}</span><div class="spending-track"><div class="spending-fill" style="height:${w.amount/max*100}%"></div></div><strong>${w.from.slice(5).replace('-','/')}</strong><small>${w.key.split('-')[1]}</small></div>`).join('')
-    $('financeChart').setAttribute('aria-label','주차별 지출: '+weeks.map(w=>`${w.from}부터 ${w.to}: ${money(w.amount)}`).join(', '))
+    // Both spending reports follow the selected month, even in the all-records list.
+    const anchor=C.dateKey(new Date(Number(month.slice(0,4)),Number(month.slice(5)),0))
+    chartWeeks=C.spendingWeeks(state.entries,anchor)
+    renderSpendingChart()
+    renderCategorySpending(month)
     const rows=showTrash?state.entries.filter(e=>e.deleted):entries.filter(e=>!e.deleted)
     $('financeListTitle').textContent=showTrash?'휴지통 · 전체 기간':showAll?'전체 내역':`${month} 내역`
     $('financeTrash').textContent=showTrash?'기록으로 돌아가기':'휴지통'
@@ -171,6 +206,15 @@
     $('financeMonth').value=C.dateKey(new Date()).slice(0,7)
     try{await reload();ready=true;status('이 기기에 저장됨 · 가계부 연결 확인 중…');queueSync()}
     catch(error){status(error.message,true);$('financeCreate').disabled=true}
+    $('financeChart').addEventListener('click',event=>{
+      const target=event.target.closest('[data-spending-week]')
+      if(target)selectSpendingWeek(target.dataset.spendingWeek)
+    })
+    let chartWidth=0
+    new ResizeObserver(entries=>{
+      const width=entries[0].contentRect.width
+      if(width>0&&width!==chartWidth){chartWidth=width;renderSpendingChart()}
+    }).observe($('financeChart'))
     $('financeCreate').addEventListener('click',()=>openForm())
     $('financeClose').addEventListener('click',()=>{$('financeOverlay').classList.remove('visible');saveDraft()})
     $('financeTypes').addEventListener('click',event=>{

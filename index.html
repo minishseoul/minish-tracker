@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body spellcheck="false" class="web-locked">
 
@@ -252,7 +252,8 @@
         <div class="finance-scroll">
           <div class="finance-filter"><button id="financePrevMonth" class="nav-btn" aria-label="이전 가계부 월">←</button><input type="month" id="financeMonth" aria-label="가계부 월"><button id="financeNextMonth" class="nav-btn" aria-label="다음 가계부 월">→</button><button id="financeCurrentMonth" class="today-btn">이번 달</button><button id="financeAll" class="today-btn">전체 내역</button></div>
           <div class="finance-summary" id="financeSummary"></div>
-          <article class="review-panel finance-chart-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">WEEKLY SPENDING</span><h2>주차별 쓴 돈</h2></div><span class="feature-help">선택 월 마지막 주까지 8주 · 지출(−)만</span></div><div id="financeChart" class="finance-chart" role="img" aria-label="주차별 지출 그래프"></div></article>
+          <article class="review-panel finance-chart-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">WEEKLY SPENDING</span><h2>주차별 쓴 돈</h2></div><span class="feature-help">선택 월 마지막 주까지 8주 · 지출(−)만<br>날짜를 누르면 해당 주의 금액을 볼 수 있어요.</span></div><div id="financeChart" class="finance-chart" role="group" aria-label="주차별 지출 그래프"></div></article>
+          <article class="review-panel finance-category-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">MONTHLY CATEGORIES</span><h2>카테고리별 쓴 돈</h2></div><span id="financeCategoryMonth" class="feature-help"></span></div><div class="category-spending-summary"><div><span>선택 월 총 지출</span><strong id="financeCategoryTotal">0원</strong></div><span id="financeCategoryCount"></span></div><ul id="financeCategorySpending" class="category-spending-list" aria-label="선택 월 카테고리별 지출"></ul></article>
           <article class="review-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">TRANSACTIONS</span><h2 id="financeListTitle">이번 달 내역</h2></div><button id="financeTrash" class="today-btn">휴지통</button></div><div id="financeList"></div></article>
           <div class="finance-tools"><button id="financeCategories" class="today-btn">카테고리 관리</button><button id="financeSync" class="today-btn">지금 동기화</button><button id="financeExport" class="today-btn">전체 백업</button><button id="financeImport" class="today-btn">백업 불러오기</button><input id="financeImportFile" type="file" accept="application/json,.json" hidden></div>
           <p class="finance-status" id="financeStatus" role="status">가계부 저장소 확인 중…</p>
@@ -468,9 +469,9 @@
   </div>
 
   <script src="supabase-config.js?v=4"></script>
-  <script src="minish-core.js?v=4"></script>
+  <script src="minish-core.js?v=6"></script>
   <script src="platform.js?v=4"></script>
   <script src="renderer.js?v=4"></script>
-  <script src="finance.js?v=4"></script>
+  <script src="finance.js?v=6"></script>
 </body>
 </html>

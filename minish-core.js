@@ -86,5 +86,20 @@
       return {from,to,key:weekKey(start),amount:entries.filter(e=>!e.deleted&&e.type==='expense'&&e.date>=from&&e.date<=to).reduce((n,e)=>n+e.amount,0)}
     })
   }
-  return {stableStringify,AREAS,dateKey,validDate,weekKey,periodKey,migrateGoals,goalStats,validEvent,sortEvents,replay,totals,spendingWeeks}
+  function spendingCategories(entries,categories,month) {
+    const groups=new Map()
+    let total=0,count=0
+    for(const entry of entries) {
+      if(entry.deleted||entry.type!=='expense'||!entry.date.startsWith(`${month}-`))continue
+      const group=groups.get(entry.categoryId)||{id:entry.categoryId,amount:0,count:0}
+      group.amount+=entry.amount;group.count++;total+=entry.amount;count++
+      if(!Number.isSafeInteger(total))throw new Error('합계가 지원 범위를 초과했습니다.')
+      groups.set(entry.categoryId,group)
+    }
+    const names=new Map(categories.map(c=>[c.id,c.name]))
+    const rows=[...groups.values()].map(row=>({...row,name:names.get(row.id)||'카테고리 없음',pct:row.amount/total*100}))
+      .sort((a,b)=>b.amount-a.amount||a.name.localeCompare(b.name)||a.id.localeCompare(b.id))
+    return {month,total,count,rows}
+  }
+  return {stableStringify,AREAS,dateKey,validDate,weekKey,periodKey,migrateGoals,goalStats,validEvent,sortEvents,replay,totals,spendingWeeks,spendingCategories}
 })
