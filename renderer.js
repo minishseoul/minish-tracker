@@ -1307,6 +1307,22 @@ function wire() {
     window.minishStorage.saveDataSync(data)
   })
 
+  const flushPendingEdits = () => {
+    if (!saveTimer && !saveRetryTimer) return
+    clearTimeout(saveTimer)
+    clearTimeout(saveRetryTimer)
+    saveTimer = null
+    saveRetryTimer = null
+    const result = window.minishStorage.saveDataSync(data)
+    if (!result?.ok) saveRetryTimer = setTimeout(save, 2000)
+  }
+  window.addEventListener('minish-before-sync', flushPendingEdits)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPendingEdits()
+  })
+  window.addEventListener('pagehide', flushPendingEdits)
+  window.addEventListener('minish-sync-meta', event => { data._sync = event.detail._sync })
+
   window.addEventListener('minish-data-replaced', event => {
     if (!event.detail || typeof event.detail !== 'object') return
     data = { ...data, ...event.detail }

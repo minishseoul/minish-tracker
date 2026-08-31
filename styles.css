@@ -2390,6 +2390,7 @@ body {
   display: grid;
   place-items: center;
   padding: 24px;
+  overflow-y: auto;
   background:
     radial-gradient(circle at 72% 18%, rgba(96, 164, 255, 0.2), transparent 34%),
     linear-gradient(145deg, #fbfdff 0%, #eef5ff 100%);
@@ -2433,12 +2434,30 @@ body {
 .private-gate .sync-field { text-align: left; margin-top: 12px; }
 .private-gate .modal-input { border-radius: 11px; font-size: 12px; }
 .private-login-button { width: 100%; height: 42px; margin-top: 16px; }
+.private-magic-button {
+  margin-top: 12px;
+  border: 0;
+  background: transparent;
+  color: #4478bc;
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.private-password-setup { margin-top: 18px; text-align: left; }
+.private-password-setup > strong { color: var(--text); font-size: 14px; }
+.private-password-setup > p { margin: 5px 0 12px; color: var(--text-3); font-size: 10px; }
 .private-gate .private-gate-message { min-height: 16px; margin: 12px 0 0; font-size: 9px; }
 .web-locked .title-bar,
 .web-locked .app-container,
 .web-locked .modal-overlay,
 .web-locked .day-picker-popup,
 .web-locked .context-menu { visibility: hidden; }
+
+.sync-conflict { padding: 14px; margin-top: 16px; border: 1px solid #bed5f5; border-radius: 12px; background: #f1f7ff; }
+.sync-conflict strong { font-size: 12px; color: #214b86; }
+.sync-conflict p { margin: 8px 0; font-size: 11px; line-height: 1.6; color: #465d7c; }
+.sync-conflict .modal-actions { flex-wrap: wrap; }
 
 /* ═══════════════════════════════════════════════
    MOBILE PWA

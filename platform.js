@@ -5,11 +5,30 @@
   const CONFIG_KEY = 'minish-tracker:supabase:v1'
   const SESSION_KEY = 'minish-tracker:session:v1'
   const DEVICE_KEY = 'minish-tracker:device-id:v1'
+  const BACKUP_KEY = 'minish-tracker:before-sync:v1'
   const TABLE = 'tracker_state'
   const electronApi = window.api?.loadData ? window.api : null
   let syncTimer = null
   let syncRunning = false
   let installPrompt = null
+  let pendingPasswordSetup = false
+  let persistedContent = null
+  let localGeneration = 0
+  let syncConflict = null
+  let authMessage = ''
+
+  function contentOf(value) {
+    if (!value) return ''
+    const { _sync, ...content } = value
+    return JSON.stringify(content, (key, item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return item
+      return Object.fromEntries(Object.keys(item).sort().map(name => [name, item[name]]))
+    })
+  }
+
+  function validData(value) {
+    return Boolean(value && Array.isArray(value.routines) && value.records && value.okr)
+  }
 
   function safeParse(value, fallback = null) {
     try { return JSON.parse(value) } catch { return fallback }
@@ -98,8 +117,43 @@
     } else {
       localStorage.removeItem(SESSION_KEY)
     }
+    pendingPasswordSetup = Boolean(session?.needsPasswordSetup)
     dispatchStatus()
     updatePrivateGate()
+  }
+
+  async function consumeAuthRedirect() {
+    if (electronApi || !location.hash) return
+    const params = new URLSearchParams(location.hash.slice(1))
+    const accessToken = params.get('access_token')
+    const refreshToken = params.get('refresh_token')
+    if (!accessToken || !refreshToken) {
+      if (params.has('error')) {
+        authMessage = '로그인 링크가 만료되었거나 이미 사용됐습니다. 새 링크를 받아 주세요.'
+        history.replaceState({}, document.title, location.pathname + location.search)
+      }
+      return
+    }
+    history.replaceState({}, document.title, location.pathname + location.search)
+    try {
+      const user = await request(`${getConfig().url}/auth/v1/user`, { headers: authHeaders(accessToken) })
+      if (getConfig().allowedUserId && user.id !== getConfig().allowedUserId) {
+        throw new Error('승인되지 않은 계정입니다.')
+      }
+      const expiresIn = Number(params.get('expires_in') || 3600)
+      setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        expires_in: expiresIn,
+        expires_at: Math.floor(Date.now() / 1000) + expiresIn,
+        token_type: params.get('token_type') || 'bearer',
+        needsPasswordSetup: ['invite', 'recovery'].includes(params.get('type')),
+        user
+      })
+    } catch {
+      authMessage = '로그인 링크를 확인할 수 없습니다. 새 링크를 받아 주세요.'
+      setSession(null)
+    }
   }
 
   function emitStatus(status, message) {
@@ -126,7 +180,7 @@
   }
 
   async function request(url, options = {}) {
-    const response = await fetch(url, options)
+    const response = await fetch(url, { ...options, signal: AbortSignal.timeout(20000) })
     const text = await response.text()
     const body = text ? safeParse(text, { message: text }) : null
     if (!response.ok) {
@@ -150,6 +204,7 @@
         headers: { apikey: config.anonKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: session.refresh_token })
       })
+      refreshed.needsPasswordSetup = session.needsPasswordSetup
       setSession(refreshed)
       return refreshed
     } catch (error) {
@@ -171,13 +226,38 @@
       throw new Error('이 계정은 MINISH TRACKER 접근 권한이 없습니다.')
     }
     setSession(session)
-    await syncNow()
+    await syncNow().catch(() => {})
     return session
+  }
+
+  async function sendMagicLink(email) {
+    if (!isConfigReady()) throw new Error('Supabase 연결 정보가 없습니다.')
+    if (!email) throw new Error('이메일을 입력해 주세요.')
+    const config = getConfig()
+    const redirectTo = `${location.origin}${location.pathname}`
+    await request(`${config.url}/auth/v1/otp?redirect_to=${encodeURIComponent(redirectTo)}`, {
+      method: 'POST',
+      headers: { apikey: config.anonKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, create_user: false })
+    })
+  }
+
+  async function updatePassword(password) {
+    const session = await refreshSessionIfNeeded()
+    if (!session) throw new Error('로그인 링크가 만료되었습니다. 새 링크를 받아 주세요.')
+    await request(`${getConfig().url}/auth/v1/user`, {
+      method: 'PUT',
+      headers: authHeaders(session.access_token),
+      body: JSON.stringify({ password })
+    })
+    setSession({ ...session, needsPasswordSetup: false })
+    await syncNow().catch(() => {})
   }
 
   async function signUp(email, password) {
     if (!isConfigReady()) throw new Error('먼저 Supabase 프로젝트 연결 정보를 저장해 주세요.')
     const config = getConfig()
+    if (config.privateMode) throw new Error('초대된 계정만 사용할 수 있습니다.')
     emitStatus('syncing', '계정 생성 중…')
     const result = await request(`${config.url}/auth/v1/signup`, {
       method: 'POST',
@@ -194,12 +274,9 @@
   }
 
   function logout() {
+    pendingPasswordSetup = false
     setSession(null)
     dispatchStatus()
-  }
-
-  function localModifiedAt(localData) {
-    return Date.parse(localData?._sync?.modifiedAt || '') || 0
   }
 
   function hasMeaningfulData(localData) {
@@ -208,13 +285,19 @@
         localData.routines?.length ||
         Object.keys(localData.records || {}).length ||
         Object.keys(localData.okr || {}).length ||
-        Object.keys(localData.weeklyReviews || {}).length
+        Object.keys(localData.weeklyReviews || {}).length ||
+        Object.keys(localData.weeklyTargets || {}).length ||
+        Object.keys(localData.dailyQuotes || {}).length ||
+        localData.quoteHistory?.length || localData.photo
       )
     )
   }
 
   async function saveLocalRaw(nextData) {
-    return localApi.saveData(nextData)
+    const result = await localApi.saveData(nextData)
+    if (!result?.ok) throw new Error('기기 저장 공간을 확인해 주세요. 기존 기록은 유지했습니다.')
+    persistedContent = contentOf(nextData)
+    return result
   }
 
   async function pullCloud(session) {
@@ -247,44 +330,82 @@
       revision: nextRevision,
       client_modified_at: localData._sync.modifiedAt
     }
-    const rows = await request(`${config.url}/rest/v1/${TABLE}?on_conflict=user_id`, {
-      method: 'POST',
+    const query = remoteRevision ? `?user_id=eq.${session.user.id}&revision=eq.${remoteRevision}` : ''
+    const rows = await request(`${config.url}/rest/v1/${TABLE}${query}`, {
+      method: remoteRevision ? 'PATCH' : 'POST',
       headers: {
         ...authHeaders(session.access_token),
-        Prefer: 'resolution=merge-duplicates,return=representation'
+        Prefer: 'return=representation'
       },
       body: JSON.stringify(body)
     })
-    return Array.isArray(rows) ? rows[0] : rows
+    if (!Array.isArray(rows) || !rows.length) throw new Error('다른 기기에서 변경되었습니다. 다시 동기화해 주세요.')
+    return rows[0]
   }
 
-  async function syncNow() {
-    if (syncRunning || !navigator.onLine || !isConfigReady() || !getSession()) return null
+  async function syncNow(resolution = null) {
+    if (syncRunning || pendingPasswordSetup || !navigator.onLine || !isConfigReady() || !getSession()) return null
     syncRunning = true
     emitStatus('syncing', '동기화 중…')
     try {
       const session = await refreshSessionIfNeeded()
       if (!session) return null
+      window.dispatchEvent(new CustomEvent('minish-before-sync'))
+      const generation = localGeneration
       const localData = await localApi.loadData()
       const remote = await pullCloud(session)
+      if (generation !== localGeneration || getSession()?.access_token !== session.access_token) {
+        queueSync()
+        return null
+      }
+
+      const markSynced = async (value, revision, replace = false) => {
+        window.dispatchEvent(new CustomEvent('minish-before-sync'))
+        if (generation !== localGeneration) { queueSync(); return }
+        const next = JSON.parse(JSON.stringify(value))
+        next._sync = { ...next._sync, baseRevision: revision, dirty: false }
+        await saveLocalRaw(next)
+        if (generation !== localGeneration) { queueSync(); return }
+        window.dispatchEvent(new CustomEvent(replace ? 'minish-data-replaced' : 'minish-sync-meta', { detail: next }))
+        syncConflict = null
+        document.getElementById('syncConflict').hidden = true
+      }
 
       if (!remote) {
-        if (localData) await pushCloud(session, localData)
+        if (hasMeaningfulData(localData)) {
+          const pushed = await pushCloud(session, localData)
+          await markSynced(localData, pushed.revision)
+        }
         emitStatus('connected', '첫 동기화 완료')
         return localData
       }
 
       const remoteData = remote.payload
-      const shouldPull = remoteData && (
-        !hasMeaningfulData(localData) ||
-        localModifiedAt(remoteData) > localModifiedAt(localData)
-      )
+      if (!validData(remoteData)) throw new Error('클라우드 기록 형식이 올바르지 않아 기존 기록을 유지했습니다.')
+      const sameContent = contentOf(localData) === contentOf(remoteData)
+      const knownBase = Number(localData?._sync?.baseRevision || 0)
+      const clean = knownBase > 0 && localData?._sync?.dirty === false
+      const shouldPull = (!hasMeaningfulData(localData) && !knownBase) || clean
+      const canPush = knownBase === Number(remote.revision) || !hasMeaningfulData(remoteData)
 
-      if (shouldPull) {
-        await saveLocalRaw(remoteData)
-        window.dispatchEvent(new CustomEvent('minish-data-replaced', { detail: remoteData }))
-      } else if (localData && localModifiedAt(localData) >= localModifiedAt(remoteData)) {
-        await pushCloud(session, localData, remote.revision)
+      if (sameContent) {
+        await markSynced(localData, remote.revision)
+      } else if (resolution === 'cloud' || (!resolution && shouldPull)) {
+        if (hasMeaningfulData(localData)) {
+          localStorage.setItem(BACKUP_KEY, JSON.stringify({ savedAt: new Date().toISOString(), local: localData, cloud: remoteData }))
+        }
+        await markSynced(remoteData, remote.revision, true)
+      } else if (resolution === 'local' || canPush) {
+        if (resolution === 'local') {
+          localStorage.setItem(BACKUP_KEY, JSON.stringify({ savedAt: new Date().toISOString(), local: localData, cloud: remoteData }))
+        }
+        const pushed = await pushCloud(session, localData, remote.revision)
+        await markSynced(localData, pushed.revision)
+      } else {
+        syncConflict = { local: localData, cloud: remoteData }
+        document.getElementById('syncConflict').hidden = false
+        emitStatus('conflict', '두 기기의 기록이 다릅니다. 동기화 설정에서 유지할 기록을 선택해 주세요. 자동 덮어쓰기는 중단했습니다.')
+        return null
       }
 
       emitStatus('connected', `동기화 완료 · ${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`)
@@ -305,25 +426,35 @@
 
   const storage = {
     async loadData() {
-      return localApi.loadData()
+      const value = await localApi.loadData()
+      persistedContent = contentOf(value)
+      return value
     },
     async saveData(nextData) {
+      if (contentOf(nextData) === persistedContent) return { ok: true }
+      localGeneration++
       nextData._sync = {
         ...(nextData._sync || {}),
         deviceId: deviceId(),
-        modifiedAt: new Date().toISOString()
+        modifiedAt: new Date().toISOString(),
+        dirty: true
       }
       const result = await localApi.saveData(nextData)
-      if (result?.ok) queueSync()
+      if (result?.ok) { persistedContent = contentOf(nextData); queueSync() }
       return result
     },
     saveDataSync(nextData) {
+      if (contentOf(nextData) === persistedContent) return { ok: true }
+      localGeneration++
       nextData._sync = {
         ...(nextData._sync || {}),
         deviceId: deviceId(),
-        modifiedAt: new Date().toISOString()
+        modifiedAt: new Date().toISOString(),
+        dirty: true
       }
-      return localApi.saveDataSync(nextData)
+      const result = localApi.saveDataSync(nextData)
+      if (result?.ok) { persistedContent = contentOf(nextData); queueSync() }
+      return result
     },
     openImage: () => localApi.openImage()
   }
@@ -340,9 +471,23 @@
     const gate = document.getElementById('privateGate')
     if (!gate) return
     const config = getConfig()
-    const locked = !electronApi && config.privateMode && !getSession()
+    const locked = !electronApi && config.privateMode && (!getSession() || pendingPasswordSetup)
     gate.hidden = !locked
     document.body.classList.toggle('web-locked', locked)
+    const setup = document.getElementById('privatePasswordSetup')
+    const standard = [
+      document.getElementById('privateEmail')?.closest('label'),
+      document.getElementById('privatePassword')?.closest('label'),
+      document.getElementById('privateLogin'),
+      document.getElementById('privateMagicLink')
+    ]
+    if (setup) setup.hidden = !pendingPasswordSetup
+    standard.forEach(element => {
+      if (element) element.hidden = pendingPasswordSetup
+    })
+    if (pendingPasswordSetup && !message) {
+      document.getElementById('privateGateMessage').textContent = '초대 승인이 완료되었습니다. 사용할 비밀번호를 만들어 주세요.'
+    }
     if (message) document.getElementById('privateGateMessage').textContent = message
   }
 
@@ -353,14 +498,14 @@
     const label = document.getElementById('syncButtonLabel')
     const message = document.getElementById('syncMessage')
     button.dataset.status = detail.status || (session ? 'connected' : 'local')
-    label.textContent = detail.status === 'syncing' ? '동기화 중' : session ? '동기화됨' : '로컬 저장'
+    label.textContent = ({ syncing: '동기화 중', error: '연결 확인', conflict: '기록 확인', offline: '오프라인 저장' })[detail.status] || (session ? '동기화됨' : '로컬 저장')
     if (message && detail.message) message.textContent = detail.message
     document.getElementById('syncAuthFields').hidden = Boolean(session)
     document.getElementById('syncConnected').hidden = !session
     document.getElementById('syncUserEmail').textContent = session?.user?.email || ''
   }
 
-  function wireSyncUi() {
+  async function wireSyncUi() {
     const overlay = document.getElementById('syncOverlay')
     const config = getConfig()
     document.getElementById('syncProjectUrl').value = config.url
@@ -410,6 +555,25 @@
     })
     document.getElementById('syncLogout').addEventListener('click', logout)
     document.getElementById('syncNow').addEventListener('click', () => syncNow().catch(() => {}))
+    document.getElementById('syncSetPassword').hidden = Boolean(electronApi)
+    document.getElementById('syncSetPassword').addEventListener('click', () => {
+      const session = getSession()
+      if (!session) return
+      overlay.classList.remove('visible')
+      setSession({ ...session, needsPasswordSetup: true })
+    })
+    document.getElementById('syncKeepLocal').addEventListener('click', () => syncNow('local').catch(() => {}))
+    document.getElementById('syncKeepCloud').addEventListener('click', () => syncNow('cloud').catch(() => {}))
+    document.getElementById('syncBackup').addEventListener('click', () => {
+      const backup = syncConflict || safeParse(localStorage.getItem(BACKUP_KEY))
+      if (!backup) { emitStatus('ready', '아직 충돌 백업이 없습니다.'); return }
+      const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }))
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `minish-sync-backup-${new Date().toISOString().slice(0, 10)}.json`
+      link.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    })
     document.getElementById('installButton').addEventListener('click', async () => {
       if (!installPrompt) return
       await installPrompt.prompt()
@@ -434,6 +598,45 @@
         button.disabled = false
       }
     })
+    document.getElementById('privateMagicLink').addEventListener('click', async () => {
+      const button = document.getElementById('privateMagicLink')
+      const message = document.getElementById('privateGateMessage')
+      button.disabled = true
+      message.textContent = '로그인 링크를 보내고 있습니다…'
+      try {
+        await sendMagicLink(document.getElementById('privateEmail').value.trim())
+        message.textContent = '로그인 링크를 보냈습니다. 메일에서 링크를 열어 주세요.'
+      } catch (error) {
+        message.textContent = `전송 실패 · ${error.message}`
+      } finally {
+        button.disabled = false
+      }
+    })
+    document.getElementById('privateSavePassword').addEventListener('click', async () => {
+      const button = document.getElementById('privateSavePassword')
+      const message = document.getElementById('privateGateMessage')
+      const password = document.getElementById('privateNewPassword').value
+      const confirmation = document.getElementById('privateNewPasswordConfirm').value
+      if (password.length < 8) {
+        message.textContent = '비밀번호는 8자 이상으로 입력해 주세요.'
+        return
+      }
+      if (password !== confirmation) {
+        message.textContent = '두 비밀번호가 서로 다릅니다.'
+        return
+      }
+      button.disabled = true
+      message.textContent = '비밀번호를 안전하게 저장하고 있습니다…'
+      try {
+        await updatePassword(password)
+        document.getElementById('privateNewPassword').value = ''
+        document.getElementById('privateNewPasswordConfirm').value = ''
+      } catch (error) {
+        message.textContent = `저장 실패 · ${error.message}`
+      } finally {
+        button.disabled = false
+      }
+    })
 
     window.addEventListener('minish-sync-status', event => updateSyncUi(event.detail))
     window.addEventListener('online', () => {
@@ -448,14 +651,18 @@
       document.getElementById('installButton').hidden = false
     })
 
-    updatePrivateGate()
+    await authReady
+    pendingPasswordSetup = Boolean(getSession()?.needsPasswordSetup)
+    updatePrivateGate(authMessage)
     dispatchStatus()
     setTimeout(() => syncNow().catch(() => {}), 1000)
     setInterval(() => syncNow().catch(() => {}), 60000)
   }
 
   window.minishStorage = storage
-  window.minishSync = { getConfig, getSession, setConfig, signIn, signUp, logout, syncNow }
+  window.minishSync = { getConfig, getSession, setConfig, signIn, signUp, sendMagicLink, logout, syncNow }
+
+  const authReady = consumeAuthRedirect()
 
   if ('serviceWorker' in navigator && ['http:', 'https:'].includes(location.protocol)) {
     window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(error => {
