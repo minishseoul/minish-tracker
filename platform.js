@@ -660,7 +660,8 @@
   }
 
   window.minishStorage = storage
-  window.minishSync = { getConfig, getSession, setConfig, signIn, signUp, sendMagicLink, logout, syncNow }
+  window.minishSync = { getConfig, getSession, setConfig, signIn, signUp, sendMagicLink, logout, syncNow,
+    readySession: () => pendingPasswordSetup ? Promise.resolve(null) : refreshSessionIfNeeded() }
 
   const authReady = consumeAuthRedirect()
 

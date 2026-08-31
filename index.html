@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body spellcheck="false" class="web-locked">
 
@@ -111,10 +111,8 @@
         </div>
 
         <div class="okr-fields">
-          <div class="okr-field">
-            <label class="okr-label">목표</label>
-            <textarea class="okr-textarea" id="okrGoal" placeholder="이 기간에 이루고 싶은 것" rows="4"></textarea>
-          </div>
+          <div class="goal-period-nav"><button id="goalPrev" type="button" aria-label="이전 목표 기간">←</button><span>분야별 목표</span><button id="goalToday" type="button">현재</button><button id="goalNext" type="button" aria-label="다음 목표 기간">→</button></div>
+          <div id="goalAreaFields"></div>
           <div class="okr-field">
             <label class="okr-label">키워드</label>
             <input class="okr-input" id="okrKeyword" placeholder="이 기간을 관통하는 한 단어" type="text">
@@ -129,7 +127,8 @@
 
       <nav class="view-tabs" aria-label="메인 화면">
         <button class="view-tab active" data-view="tracker">체커보드</button>
-        <button class="view-tab" data-view="review">주간 회고</button>
+        <button class="view-tab" data-view="review">대시보드</button>
+        <button class="view-tab" data-view="finance">가계부</button>
         <button class="view-tab" data-view="quote">오늘의 문장</button>
       </nav>
 
@@ -197,14 +196,21 @@
         </div>
 
         <div class="review-scroll">
+          <article class="review-panel goal-dashboard">
+            <div class="review-panel-header"><div><span class="review-panel-kicker">OBJECTIVES</span><h2>분야별 목표 달성</h2></div><label class="goal-year-label">집계 연도 <input id="goalDashboardYear" type="number" min="2000" max="2199" aria-label="목표 집계 연도"></label></div>
+            <p class="feature-help">작성한 목표만 집계합니다. 연간·분기·월·주차 목표를 각각 독립적으로 체크해요.</p>
+            <div class="goal-summary" id="goalSummary"></div>
+            <div class="goal-area-summary" id="goalAreaSummary"></div>
+            <div class="goal-history" id="goalHistory"></div>
+          </article>
           <div class="review-summary-grid">
             <article class="review-card review-card-primary">
-              <span class="review-card-label">전체 달성률</span>
+              <span class="review-card-label">주간 루틴 달성률</span>
               <strong class="review-card-value" id="reviewPercent">0%</strong>
               <div class="review-progress"><span id="reviewProgressFill"></span></div>
             </article>
             <article class="review-card">
-              <span class="review-card-label">완료한 목표</span>
+              <span class="review-card-label">완료한 루틴 체크</span>
               <strong class="review-card-value" id="reviewDone">0 / 0</strong>
               <span class="review-card-detail">달성·양호 기준</span>
             </article>
@@ -241,6 +247,19 @@
         </div>
       </section>
 
+      <section class="main-view finance-view" id="financeView">
+        <div class="finance-toolbar"><div><span class="review-eyebrow">MONEY JOURNAL</span><h1 class="review-title">가계부</h1><p class="feature-help">들어온 돈, 쓴 돈, 미래에 모은 돈.</p></div><button id="financeCreate" class="add-btn" type="button">+ 만들기</button></div>
+        <div class="finance-scroll">
+          <div class="finance-filter"><button id="financePrevMonth" class="nav-btn" aria-label="이전 가계부 월">←</button><input type="month" id="financeMonth" aria-label="가계부 월"><button id="financeNextMonth" class="nav-btn" aria-label="다음 가계부 월">→</button><button id="financeCurrentMonth" class="today-btn">이번 달</button><button id="financeAll" class="today-btn">전체 내역</button></div>
+          <div class="finance-summary" id="financeSummary"></div>
+          <article class="review-panel finance-chart-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">WEEKLY SPENDING</span><h2>주차별 쓴 돈</h2></div><span class="feature-help">선택 월 마지막 주까지 8주 · 지출(−)만</span></div><div id="financeChart" class="finance-chart" role="img" aria-label="주차별 지출 그래프"></div></article>
+          <article class="review-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">TRANSACTIONS</span><h2 id="financeListTitle">이번 달 내역</h2></div><button id="financeTrash" class="today-btn">휴지통</button></div><div id="financeList"></div></article>
+          <div class="finance-tools"><button id="financeCategories" class="today-btn">카테고리 관리</button><button id="financeSync" class="today-btn">지금 동기화</button><button id="financeExport" class="today-btn">전체 백업</button><button id="financeImport" class="today-btn">백업 불러오기</button><input id="financeImportFile" type="file" accept="application/json,.json" hidden></div>
+          <p class="finance-status" id="financeStatus" role="status">가계부 저장소 확인 중…</p>
+          <p class="feature-help">합계 = 수입 − 지출 − 저축·투자. 실제 은행 잔액이 아닌, 입력한 기록의 합계입니다.<br>삭제·수정 이력은 보관됩니다. 오프라인 기록은 연결 후 동기화되며, 브라우저 데이터 삭제 전에는 전체 백업을 보관하세요.</p>
+        </div>
+      </section>
+
       <section class="main-view quote-view" id="quoteView">
         <div class="quote-toolbar">
           <div>
@@ -272,6 +291,22 @@
 
     </main>
   </div>
+
+  <div class="modal-overlay" id="financeOverlay"><div class="modal finance-modal" role="dialog" aria-modal="true" aria-labelledby="financeFormTitle">
+    <h2 class="modal-title" id="financeFormTitle">기록 만들기</h2>
+    <div class="finance-types" id="financeTypes"><button type="button" data-type="income">+ 수입</button><button type="button" data-type="expense">− 지출</button><button type="button" data-type="investment">* 저축·투자</button></div>
+    <form id="financeForm" hidden>
+      <label class="sync-field"><span>날짜</span><input class="modal-input" id="financeDate" type="date" required></label>
+      <label class="sync-field"><span>카테고리</span><select class="modal-input" id="financeCategory" required></select></label>
+      <div class="finance-inline-category"><input class="modal-input" id="financeNewCategory" placeholder="새 카테고리 이름" maxlength="40" aria-label="새 카테고리 이름"><button class="today-btn" id="financeAddCategory" type="button">추가</button></div>
+      <label class="sync-field"><span>어떤 돈인가요?</span><input class="modal-input" id="financeNote" maxlength="160" placeholder="예: 점심, 급여, 적금" required></label>
+      <label class="sync-field"><span>금액 · 원</span><input class="modal-input" id="financeAmount" inputmode="numeric" pattern="[0-9,]+" placeholder="0" required></label>
+      <button class="modal-btn confirm finance-save" id="financeSave" type="submit">저장</button>
+    </form>
+    <p id="financeFormMessage" class="finance-status" role="status"></p><button class="sync-close" id="financeClose" type="button">닫기</button>
+  </div></div>
+  <div class="modal-overlay" id="financeCategoryOverlay"><div class="modal finance-modal" role="dialog" aria-modal="true" aria-labelledby="financeCategoryTitle"><h2 id="financeCategoryTitle" class="modal-title">내 카테고리</h2><p class="feature-help">기본 카테고리는 없습니다. 필요한 이름만 직접 추가하세요.</p><div class="finance-inline-category"><input class="modal-input" id="financeCategoryName" maxlength="40" placeholder="새 카테고리" aria-label="카테고리 이름"><button class="today-btn" id="financeCategoryCreate">추가</button></div><div id="financeCategoryList"></div><p id="financeCategoryMessage" role="status" class="finance-status"></p><button id="financeCategoryClose" class="sync-close">닫기</button></div></div>
+  <div class="modal-overlay" id="financeDeleteOverlay"><div class="modal finance-modal" role="dialog" aria-modal="true" aria-labelledby="financeDeleteTitle"><h2 id="financeDeleteTitle" class="modal-title">휴지통으로 옮길까요?</h2><p class="feature-help">합계에서 제외되며 휴지통에서 다시 복원할 수 있습니다.</p><div class="modal-actions"><button id="financeDeleteCancel" class="modal-btn cancel">취소</button><button id="financeDeleteConfirm" class="modal-btn confirm">휴지통으로</button></div><p id="financeDeleteMessage" class="finance-status" role="status"></p></div></div>
 
   <!-- Context Menu -->
   <div class="context-menu" id="contextMenu">
@@ -432,8 +467,10 @@
     </div>
   </div>
 
-  <script src="supabase-config.js"></script>
-  <script src="platform.js"></script>
-  <script src="renderer.js"></script>
+  <script src="supabase-config.js?v=4"></script>
+  <script src="minish-core.js?v=4"></script>
+  <script src="platform.js?v=4"></script>
+  <script src="renderer.js?v=4"></script>
+  <script src="finance.js?v=4"></script>
 </body>
 </html>

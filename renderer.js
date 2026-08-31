@@ -32,6 +32,8 @@ let saveRetryTimer    = null
 let ctxTarget         = null
 let drag              = null
 let pendingDeleteIdx  = null
+const goalOffsets = { year: 0, quarter: 0, month: 0 }
+let goalDashboardScope = 'week'
 
 // ─── Date Helpers ────────────────────────────────────────────────
 
@@ -69,7 +71,12 @@ function getISOWeekInfo(date) {
 }
 
 function getPeriodDate(period) {
-  return period === 'week' ? getWeekDates(weekOffset)[0] : new Date()
+  if (period === 'week') return getWeekDates(weekOffset)[0]
+  const date = new Date()
+  date.setDate(1)
+  if (period === 'year') date.setFullYear(date.getFullYear()+goalOffsets.year)
+  else date.setMonth(date.getMonth()+goalOffsets[period]*(period==='quarter'?3:1))
+  return date
 }
 
 function getWeekKey(date) {
@@ -253,6 +260,7 @@ function getRoutineReviewData(routine, dates) {
 }
 
 function renderReview() {
+  renderGoalDashboard()
   const dates = getWeekDates(weekOffset)
   const weekInfo = getISOWeekInfo(dates[0])
   const routineStats = data.routines
@@ -553,16 +561,46 @@ async function onPhotoClick() {
 function renderOKR() {
   document.getElementById('okrPeriodLabel').textContent = getOKRLabel(activePeriod)
   const okr = data.okr[getOKRKey(activePeriod)] || {}
-  document.getElementById('okrGoal').value    = okr.goal    || ''
+  document.getElementById('goalAreaFields').innerHTML = MinishCore.AREAS.map(area => {
+    const goal = okr.areas?.[area] || {}
+    return `<div class="goal-area-field${goal.done && goal.text?.trim()?' completed':''}"><div class="goal-area-heading"><label for="goal${area}">${area}</label><label class="goal-complete"><input type="checkbox" data-goal-check="${area}" aria-label="${area} 목표 달성" ${goal.done && goal.text?.trim()?'checked':''} ${goal.text?.trim()?'':'disabled'}><span>달성</span></label></div><textarea id="goal${area}" class="okr-textarea" data-goal-area="${area}" maxlength="300" rows="2" placeholder="${area}에서 이루고 싶은 목표">${esc(goal.text||'')}</textarea></div>`
+  }).join('')
   document.getElementById('okrKeyword').value = okr.keyword || ''
 }
 
 function persistOKR() {
   const key = getOKRKey(activePeriod)
   if (!data.okr[key]) data.okr[key] = {}
-  data.okr[key].goal    = document.getElementById('okrGoal').value
+  if (!data.okr[key].areas) data.okr[key].areas = {}
+  MinishCore.AREAS.forEach(area => {
+    const input = document.querySelector(`[data-goal-area="${area}"]`)
+    const check = document.querySelector(`[data-goal-check="${area}"]`)
+    const text = input.value
+    const done = Boolean(text.trim() && check.checked)
+    data.okr[key].areas[area] = { text, done }
+    check.disabled = !text.trim()
+    check.checked = done
+    input.closest('.goal-area-field').classList.toggle('completed',done)
+  })
   data.okr[key].keyword = document.getElementById('okrKeyword').value
   debounceSave()
+  renderGoalDashboard()
+}
+
+function renderGoalDashboard() {
+  const yearInput=document.getElementById('goalDashboardYear')
+  if(!yearInput.value)yearInput.value=new Date().getFullYear()
+  const year=Number(yearInput.value)
+  if(year<2000||year>2199)return
+  const labels={year:'연간',quarter:'분기',month:'월',week:'주차'}
+  document.getElementById('goalSummary').innerHTML=Object.entries(labels).map(([scope,label])=>{
+    const stats=MinishCore.goalStats(data.okr,year,scope)
+    return `<button class="goal-scope-card${scope===goalDashboardScope?' active':''}" data-goal-scope="${scope}"><span>${label} 목표</span><strong>${stats.total?stats.pct+'%':'—'}</strong><small>${stats.done} / ${stats.total} 달성</small></button>`
+  }).join('')
+  const stats=MinishCore.goalStats(data.okr,year,goalDashboardScope)
+  document.getElementById('goalAreaSummary').innerHTML=stats.areas.map(a=>`<div><div><strong>${a.area}</strong><span>${a.done}/${a.total}</span></div><div class="routine-review-bar"><span style="width:${a.total?a.done/a.total*100:0}%"></span></div></div>`).join('')
+  const goals=stats.areas.flatMap(a=>a.goals).sort((a,b)=>b.key.localeCompare(a.key)||MinishCore.AREAS.indexOf(a.area)-MinishCore.AREAS.indexOf(b.area))
+  document.getElementById('goalHistory').innerHTML=goals.length?goals.map(g=>`<div class="goal-history-row"><span class="goal-history-check${g.done?' done':''}">${g.done?'✓':'○'}</span><span class="goal-history-period">${esc(g.key)}</span><span class="goal-history-area">${g.area}</span><span>${esc(g.text)}</span></div>`).join(''):'<p class="review-empty">이 기간의 목표를 작성하면 달성 현황이 표시됩니다.</p>'
 }
 
 // ─── Grid ────────────────────────────────────────────────────────
@@ -1195,10 +1233,28 @@ function wire() {
     })
   })
 
-  document.getElementById('okrGoal').addEventListener('input', persistOKR)
+  document.getElementById('goalAreaFields').addEventListener('input',persistOKR)
   document.getElementById('okrKeyword').addEventListener('input', persistOKR)
+  document.getElementById('goalDashboardYear').addEventListener('change',renderGoalDashboard)
+  document.getElementById('goalSummary').addEventListener('click',event=>{
+    const button=event.target.closest('[data-goal-scope]')
+    if(button){goalDashboardScope=button.dataset.goalScope;renderGoalDashboard()}
+  })
+  function moveGoalPeriod(amount) {
+    persistOKR()
+    if(activePeriod==='week')moveWeek(weekOffset+amount)
+    else {goalOffsets[activePeriod]+=amount;renderOKR()}
+  }
+  document.getElementById('goalPrev').addEventListener('click',()=>moveGoalPeriod(-1))
+  document.getElementById('goalNext').addEventListener('click',()=>moveGoalPeriod(1))
+  document.getElementById('goalToday').addEventListener('click',()=>{
+    persistOKR()
+    if(activePeriod==='week')moveWeek(0)
+    else{goalOffsets[activePeriod]=0;renderOKR()}
+  })
 
   function moveWeek(offset) {
+    if(activePeriod==='week')persistOKR()
     closeDayPicker()
     weekOffset = offset
     renderGrid()
@@ -1351,7 +1407,7 @@ function normalizeDataShape() {
   if (!data.weeklyReviews || typeof data.weeklyReviews !== 'object') data.weeklyReviews = {}
   if (!data.dailyQuotes || typeof data.dailyQuotes !== 'object') data.dailyQuotes = {}
   if (!Array.isArray(data.quoteHistory)) data.quoteHistory = []
-  let removedAiQuotes = false
+  let removedAiQuotes = MinishCore.migrateGoals(data)
   Object.keys(data.dailyQuotes).forEach(key => {
     if (['openai', 'codex'].includes(data.dailyQuotes[key]?.generatedBy)) {
       delete data.dailyQuotes[key]

@@ -1,11 +1,13 @@
-const CACHE_NAME = 'minish-tracker-v3'
+const CACHE_NAME = 'minish-tracker-v4'
 const APP_SHELL = [
   './',
   './index.html',
-  './styles.css',
-  './platform.js',
-  './supabase-config.js',
-  './renderer.js',
+  './styles.css?v=4',
+  './platform.js?v=4',
+  './supabase-config.js?v=4',
+  './renderer.js?v=4',
+  './minish-core.js?v=4',
+  './finance.js?v=4',
   './manifest.webmanifest',
   './fonts/PretendardVariable.woff2',
   './icons/icon-192.png',
