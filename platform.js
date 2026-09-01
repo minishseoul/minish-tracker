@@ -7,23 +7,20 @@
   const DEVICE_KEY = 'minish-tracker:device-id:v1'
   const BACKUP_KEY = 'minish-tracker:before-sync:v1'
   const TABLE = 'tracker_state'
+  const SyncCore = window.MinishCore
   const electronApi = window.api?.loadData ? window.api : null
   let syncTimer = null
   let syncRunning = false
   let installPrompt = null
   let pendingPasswordSetup = false
   let persistedContent = null
+  let persistedData = null
   let localGeneration = 0
-  let syncConflict = null
+  let lastMergeBackup = null
   let authMessage = ''
 
   function contentOf(value) {
-    if (!value) return ''
-    const { _sync, ...content } = value
-    return JSON.stringify(content, (key, item) => {
-      if (!item || typeof item !== 'object' || Array.isArray(item)) return item
-      return Object.fromEntries(Object.keys(item).sort().map(name => [name, item[name]]))
-    })
+    return value ? SyncCore.stableStringify(SyncCore.trackerContent(value)) : ''
   }
 
   function validData(value) {
@@ -297,7 +294,14 @@
     const result = await localApi.saveData(nextData)
     if (!result?.ok) throw new Error('기기 저장 공간을 확인해 주세요. 기존 기록은 유지했습니다.')
     persistedContent = contentOf(nextData)
+    persistedData = JSON.parse(JSON.stringify(nextData))
     return result
+  }
+
+  function preserveMergeBackup(local, cloud) {
+    if (!hasMeaningfulData(local) || !hasMeaningfulData(cloud) || contentOf(local) === contentOf(cloud)) return
+    lastMergeBackup = { savedAt: new Date().toISOString(), local, cloud }
+    try { localStorage.setItem(BACKUP_KEY, JSON.stringify(lastMergeBackup)) } catch {}
   }
 
   async function pullCloud(session) {
@@ -315,14 +319,7 @@
 
   async function pushCloud(session, localData, remoteRevision = 0) {
     const config = getConfig()
-    if (!localData._sync?.modifiedAt) {
-      localData._sync = {
-        ...(localData._sync || {}),
-        deviceId: deviceId(),
-        modifiedAt: new Date().toISOString()
-      }
-      await saveLocalRaw(localData)
-    }
+    localData = SyncCore.ensureTrackerVersions(localData)
     const nextRevision = Number(remoteRevision || 0) + 1
     const body = {
       user_id: session.user.id,
@@ -330,20 +327,19 @@
       revision: nextRevision,
       client_modified_at: localData._sync.modifiedAt
     }
-    const query = remoteRevision ? `?user_id=eq.${session.user.id}&revision=eq.${remoteRevision}` : ''
+    const query = remoteRevision ? `?user_id=eq.${session.user.id}&revision=eq.${remoteRevision}` : '?on_conflict=user_id'
     const rows = await request(`${config.url}/rest/v1/${TABLE}${query}`, {
       method: remoteRevision ? 'PATCH' : 'POST',
       headers: {
         ...authHeaders(session.access_token),
-        Prefer: 'return=representation'
+        Prefer: remoteRevision ? 'return=representation' : 'resolution=ignore-duplicates,return=representation'
       },
       body: JSON.stringify(body)
     })
-    if (!Array.isArray(rows) || !rows.length) throw new Error('다른 기기에서 변경되었습니다. 다시 동기화해 주세요.')
-    return rows[0]
+    return Array.isArray(rows) ? rows[0] || null : null
   }
 
-  async function syncNow(resolution = null) {
+  async function syncNow() {
     if (syncRunning || pendingPasswordSetup || !navigator.onLine || !isConfigReady() || !getSession()) return null
     syncRunning = true
     emitStatus('syncing', '동기화 중…')
@@ -353,63 +349,55 @@
       window.dispatchEvent(new CustomEvent('minish-before-sync'))
       const generation = localGeneration
       const localData = await localApi.loadData()
-      const remote = await pullCloud(session)
-      if (generation !== localGeneration || getSession()?.access_token !== session.access_token) {
-        queueSync()
-        return null
-      }
-
       const markSynced = async (value, revision, replace = false) => {
         window.dispatchEvent(new CustomEvent('minish-before-sync'))
         if (generation !== localGeneration) { queueSync(); return }
         const next = JSON.parse(JSON.stringify(value))
-        next._sync = { ...next._sync, baseRevision: revision, dirty: false }
+        next._sync = { ...next._sync, baseRevision: revision, dirty: false, dirtyPaths: [] }
         await saveLocalRaw(next)
         if (generation !== localGeneration) { queueSync(); return }
         window.dispatchEvent(new CustomEvent(replace ? 'minish-data-replaced' : 'minish-sync-meta', { detail: next }))
-        syncConflict = null
         document.getElementById('syncConflict').hidden = true
       }
-
-      if (!remote) {
-        if (hasMeaningfulData(localData)) {
-          const pushed = await pushCloud(session, localData)
-          await markSynced(localData, pushed.revision)
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const remote = await pullCloud(session)
+        if (generation !== localGeneration || getSession()?.access_token !== session.access_token) {
+          queueSync(); return null
         }
-        emitStatus('connected', '첫 동기화 완료')
-        return localData
+        if (!remote) {
+          if (!hasMeaningfulData(localData)) {
+            emitStatus('connected', '클라우드 자동 저장 준비됨'); return localData
+          }
+          const candidate = SyncCore.ensureTrackerVersions(localData)
+          const pushed = await pushCloud(session, candidate)
+          if (!pushed) continue
+          await markSynced(candidate, pushed.revision)
+          emitStatus('connected', '클라우드 자동 저장 완료')
+          return candidate
+        }
+        const remoteData = remote.payload
+        if (!validData(remoteData)) throw new Error('클라우드 기록 형식이 올바르지 않아 기존 기록을 유지했습니다.')
+        if (!validData(localData)) {
+          await markSynced(remoteData, remote.revision, true)
+          emitStatus('connected', '클라우드 최신 기록 적용 완료')
+          return remoteData
+        }
+        preserveMergeBackup(localData, remoteData)
+        const rebased = SyncCore.rebaseTrackerChanges(localData, remoteData)
+        const merged = SyncCore.mergeTrackerData(rebased, remoteData)
+        const remoteIsCurrent = contentOf(merged) === contentOf(remoteData) && remoteData._sync?.mergeSchema === 1
+        if (remoteIsCurrent) {
+          await markSynced(merged, remote.revision, contentOf(localData) !== contentOf(merged))
+          emitStatus('connected', `클라우드 최신 기록 적용 · ${new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' })}`)
+          return merged
+        }
+        const pushed = await pushCloud(session, merged, remote.revision)
+        if (!pushed) continue
+        await markSynced(merged, pushed.revision, contentOf(localData) !== contentOf(merged))
+        emitStatus('connected', `클라우드 자동 저장 완료 · ${new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' })}`)
+        return merged
       }
-
-      const remoteData = remote.payload
-      if (!validData(remoteData)) throw new Error('클라우드 기록 형식이 올바르지 않아 기존 기록을 유지했습니다.')
-      const sameContent = contentOf(localData) === contentOf(remoteData)
-      const knownBase = Number(localData?._sync?.baseRevision || 0)
-      const clean = knownBase > 0 && localData?._sync?.dirty === false
-      const shouldPull = (!hasMeaningfulData(localData) && !knownBase) || clean
-      const canPush = knownBase === Number(remote.revision) || !hasMeaningfulData(remoteData)
-
-      if (sameContent) {
-        await markSynced(localData, remote.revision)
-      } else if (resolution === 'cloud' || (!resolution && shouldPull)) {
-        if (hasMeaningfulData(localData)) {
-          localStorage.setItem(BACKUP_KEY, JSON.stringify({ savedAt: new Date().toISOString(), local: localData, cloud: remoteData }))
-        }
-        await markSynced(remoteData, remote.revision, true)
-      } else if (resolution === 'local' || canPush) {
-        if (resolution === 'local') {
-          localStorage.setItem(BACKUP_KEY, JSON.stringify({ savedAt: new Date().toISOString(), local: localData, cloud: remoteData }))
-        }
-        const pushed = await pushCloud(session, localData, remote.revision)
-        await markSynced(localData, pushed.revision)
-      } else {
-        syncConflict = { local: localData, cloud: remoteData }
-        document.getElementById('syncConflict').hidden = false
-        emitStatus('conflict', '두 기기의 기록이 다릅니다. 동기화 설정에서 유지할 기록을 선택해 주세요. 자동 덮어쓰기는 중단했습니다.')
-        return null
-      }
-
-      emitStatus('connected', `동기화 완료 · ${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`)
-      return shouldPull ? remoteData : localData
+      throw new Error('동시에 변경된 내용을 자동 병합하는 중입니다. 잠시 후 다시 시도합니다.')
     } catch (error) {
       console.error('Supabase sync failed:', error)
       emitStatus('error', `동기화 실패 · ${error.message}`)
@@ -421,39 +409,32 @@
 
   function queueSync() {
     clearTimeout(syncTimer)
-    syncTimer = setTimeout(() => syncNow().catch(() => {}), 1200)
+    syncTimer = setTimeout(() => syncNow().catch(() => {}), 100)
   }
 
   const storage = {
     async loadData() {
       const value = await localApi.loadData()
       persistedContent = contentOf(value)
+      persistedData = value ? JSON.parse(JSON.stringify(value)) : null
       return value
     },
     async saveData(nextData) {
       if (contentOf(nextData) === persistedContent) return { ok: true }
       localGeneration++
-      nextData._sync = {
-        ...(nextData._sync || {}),
-        deviceId: deviceId(),
-        modifiedAt: new Date().toISOString(),
-        dirty: true
-      }
-      const result = await localApi.saveData(nextData)
-      if (result?.ok) { persistedContent = contentOf(nextData); queueSync() }
+      const marked = SyncCore.markTrackerChanges(nextData, persistedData || {}, deviceId())
+      nextData._sync = marked._sync
+      const result = await localApi.saveData(marked)
+      if (result?.ok) { persistedContent = contentOf(marked); persistedData = JSON.parse(JSON.stringify(marked)); queueSync() }
       return result
     },
     saveDataSync(nextData) {
       if (contentOf(nextData) === persistedContent) return { ok: true }
       localGeneration++
-      nextData._sync = {
-        ...(nextData._sync || {}),
-        deviceId: deviceId(),
-        modifiedAt: new Date().toISOString(),
-        dirty: true
-      }
-      const result = localApi.saveDataSync(nextData)
-      if (result?.ok) { persistedContent = contentOf(nextData); queueSync() }
+      const marked = SyncCore.markTrackerChanges(nextData, persistedData || {}, deviceId())
+      nextData._sync = marked._sync
+      const result = localApi.saveDataSync(marked)
+      if (result?.ok) { persistedContent = contentOf(marked); persistedData = JSON.parse(JSON.stringify(marked)); queueSync() }
       return result
     },
     openImage: () => localApi.openImage()
@@ -498,7 +479,7 @@
     const label = document.getElementById('syncButtonLabel')
     const message = document.getElementById('syncMessage')
     button.dataset.status = detail.status || (session ? 'connected' : 'local')
-    label.textContent = ({ syncing: '동기화 중', error: '연결 확인', conflict: '기록 확인', offline: '오프라인 저장' })[detail.status] || (session ? '동기화됨' : '로컬 저장')
+    label.textContent = ({ syncing: '클라우드 저장 중', error: '연결 확인', offline: '오프라인 저장' })[detail.status] || (session ? '클라우드 저장됨' : '로컬 저장')
     if (message && detail.message) message.textContent = detail.message
     document.getElementById('syncAuthFields').hidden = Boolean(session)
     document.getElementById('syncConnected').hidden = !session
@@ -562,11 +543,9 @@
       overlay.classList.remove('visible')
       setSession({ ...session, needsPasswordSetup: true })
     })
-    document.getElementById('syncKeepLocal').addEventListener('click', () => syncNow('local').catch(() => {}))
-    document.getElementById('syncKeepCloud').addEventListener('click', () => syncNow('cloud').catch(() => {}))
     document.getElementById('syncBackup').addEventListener('click', () => {
-      const backup = syncConflict || safeParse(localStorage.getItem(BACKUP_KEY))
-      if (!backup) { emitStatus('ready', '아직 충돌 백업이 없습니다.'); return }
+      const backup = lastMergeBackup || safeParse(localStorage.getItem(BACKUP_KEY))
+      if (!backup) { emitStatus('ready', '아직 자동 병합 백업이 없습니다.'); return }
       const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }))
       const link = document.createElement('a')
       link.href = url
@@ -645,6 +624,9 @@
     })
     window.addEventListener('offline', dispatchStatus)
     window.addEventListener('focus', () => syncNow().catch(() => {}))
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') syncNow().catch(() => {})
+    })
     window.addEventListener('beforeinstallprompt', event => {
       event.preventDefault()
       installPrompt = event
@@ -656,7 +638,9 @@
     updatePrivateGate(authMessage)
     dispatchStatus()
     setTimeout(() => syncNow().catch(() => {}), 1000)
-    setInterval(() => syncNow().catch(() => {}), 60000)
+    setInterval(() => {
+      if (document.visibilityState !== 'hidden') syncNow().catch(() => {})
+    }, 5000)
   }
 
   window.minishStorage = storage

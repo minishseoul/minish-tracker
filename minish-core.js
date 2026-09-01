@@ -101,5 +101,107 @@
       .sort((a,b)=>b.amount-a.amount||a.name.localeCompare(b.name)||a.id.localeCompare(b.id))
     return {month,total,count,rows}
   }
-  return {stableStringify,AREAS,dateKey,validDate,weekKey,periodKey,migrateGoals,goalStats,validEvent,sortEvents,replay,totals,spendingWeeks,spendingCategories}
+  const clone=value=>value==null?value:JSON.parse(JSON.stringify(value))
+  const encodePath=value=>String(value).replace(/~/g,'~0').replace(/\//g,'~1')
+  const decodePath=value=>value.replace(/~1/g,'/').replace(/~0/g,'~')
+  function trackerContent(value) {
+    if(!value||typeof value!=='object')return null
+    const {_sync,...content}=value
+    return content
+  }
+  function toTrackerSyncShape(value) {
+    const content=clone(trackerContent(value)||{})
+    if(Array.isArray(content.routines)) {
+      content.__routineItems=Object.fromEntries(content.routines.filter(item=>item&&typeof item.id==='string').map(item=>[item.id,item]))
+      content.__routineOrder=content.routines.filter(item=>item&&typeof item.id==='string').map(item=>item.id)
+      delete content.routines
+    }
+    return content
+  }
+  function fromTrackerSyncShape(shape) {
+    const content=clone(shape||{}),items=content.__routineItems,order=content.__routineOrder
+    delete content.__routineItems;delete content.__routineOrder
+    if(items&&typeof items==='object'&&!Array.isArray(items)) {
+      const ids=[...(Array.isArray(order)?order:[]),...Object.keys(items).sort()].filter((id,index,list)=>items[id]&&list.indexOf(id)===index)
+      content.routines=ids.map(id=>items[id])
+    } else if(!Array.isArray(content.routines))content.routines=[]
+    for(const key of ['records','okr','weeklyTargets','weeklyReviews','dailyQuotes'])if(!content[key]||typeof content[key]!=='object'||Array.isArray(content[key]))content[key]={}
+    if(!Array.isArray(content.quoteHistory))content.quoteHistory=[]
+    return content
+  }
+  function trackerLeaves(value) {
+    const leaves=new Map()
+    const walk=(item,segments)=>{
+      if(item===null||typeof item!=='object'||Array.isArray(item)) {leaves.set('/'+segments.map(encodePath).join('/'),clone(item));return}
+      const keys=Object.keys(item).sort()
+      if(!keys.length)return
+      for(const key of keys)walk(item[key],[...segments,key])
+    }
+    walk(toTrackerSyncShape(value),[])
+    return leaves
+  }
+  function validTrackerVersion(value) {
+    return Boolean(value&&Number.isSafeInteger(value.at)&&value.at>=0&&typeof value.device==='string'&&value.device.length<=100)
+  }
+  function latestTrackerTime(...values) {
+    return values.reduce((latest,value)=>Math.max(latest,...Object.values(value?._sync?.fieldVersions||{}).filter(validTrackerVersion).map(v=>v.at)),0)
+  }
+  function ensureTrackerVersions(value) {
+    const next=clone(value||{}),versions={}
+    for(const [path,version] of Object.entries(next._sync?.fieldVersions||{}))if(validTrackerVersion(version))versions[path]=version
+    const legacyAt=Math.max(0,Date.parse(next._sync?.modifiedAt||'')||0),legacyDevice=String(next._sync?.deviceId||'legacy').slice(0,100)
+    for(const path of trackerLeaves(next).keys())if(!versions[path])versions[path]={at:legacyAt,device:legacyDevice}
+    next._sync={...(next._sync||{}),mergeSchema:1,fieldVersions:versions}
+    return next
+  }
+  function changedTrackerPaths(before,after) {
+    const a=trackerLeaves(before),b=trackerLeaves(after),paths=new Set([...a.keys(),...b.keys()])
+    return [...paths].filter(path=>!a.has(path)||!b.has(path)||stableStringify(a.get(path))!==stableStringify(b.get(path))).sort()
+  }
+  function markTrackerChanges(nextValue,previousValue,device,now=Date.now()) {
+    const next=ensureTrackerVersions(nextValue),paths=changedTrackerPaths(previousValue||{},next)
+    if(!paths.length)return next
+    const at=Math.max(Number(now)||0,latestTrackerTime(next,previousValue)+1),id=String(device||'local').slice(0,100)
+    const versions={...next._sync.fieldVersions},dirty=new Set(next._sync.dirtyPaths||[])
+    for(const path of paths){versions[path]={at,device:id};dirty.add(path)}
+    next._sync={...next._sync,mergeSchema:1,fieldVersions:versions,dirtyPaths:[...dirty].sort(),deviceId:id,modifiedAt:new Date(at).toISOString(),dirty:true}
+    return next
+  }
+  function rebaseTrackerChanges(localValue,remoteValue) {
+    const local=ensureTrackerVersions(localValue),dirty=[...new Set(local._sync.dirtyPaths||[])].sort()
+    if(!dirty.length)return local
+    const at=latestTrackerTime(local,ensureTrackerVersions(remoteValue))+1,device=String(local._sync.deviceId||'local').slice(0,100)
+    for(const path of dirty)local._sync.fieldVersions[path]={at,device}
+    local._sync.modifiedAt=new Date(at).toISOString()
+    return local
+  }
+  function mergeTrackerData(localValue,remoteValue) {
+    const local=ensureTrackerVersions(localValue),remote=ensureTrackerVersions(remoteValue)
+    const a=trackerLeaves(local),b=trackerLeaves(remote),av=local._sync.fieldVersions,bv=remote._sync.fieldVersions
+    const paths=[...new Set([...a.keys(),...b.keys(),...Object.keys(av),...Object.keys(bv)])].sort()
+    const chosen=new Map(),versions={}
+    const compare=(left,right)=>left.at-right.at||left.device.localeCompare(right.device)
+    for(const path of paths) {
+      const left=validTrackerVersion(av[path])?av[path]:{at:0,device:''},right=validTrackerVersion(bv[path])?bv[path]:{at:0,device:''}
+      const takeLocal=compare(left,right)>0
+      const winner=takeLocal?left:right,source=takeLocal?a:b
+      versions[path]=winner
+      if(source.has(path))chosen.set(path,clone(source.get(path)))
+    }
+    const shape={}
+    for(const [path,value] of [...chosen].sort(([a],[b])=>a.split('/').length-b.split('/').length)) {
+      const parts=path.slice(1).split('/').filter(Boolean).map(decodePath)
+      let target=shape
+      for(let i=0;i<parts.length-1;i++){
+        if(!target[parts[i]]||typeof target[parts[i]]!=='object'||Array.isArray(target[parts[i]]))Object.defineProperty(target,parts[i],{value:{},writable:true,enumerable:true,configurable:true})
+        target=target[parts[i]]
+      }
+      if(parts.length)Object.defineProperty(target,parts.at(-1),{value,writable:true,enumerable:true,configurable:true})
+    }
+    const merged=fromTrackerSyncShape(shape),at=Math.max(latestTrackerTime(local,remote),0)
+    merged._sync={...remote._sync,...local._sync,mergeSchema:1,fieldVersions:versions,modifiedAt:at?new Date(at).toISOString():new Date(0).toISOString()}
+    return merged
+  }
+  return {stableStringify,AREAS,dateKey,validDate,weekKey,periodKey,migrateGoals,goalStats,validEvent,sortEvents,replay,totals,spendingWeeks,spendingCategories,
+    trackerContent,trackerLeaves,ensureTrackerVersions,changedTrackerPaths,markTrackerChanges,rebaseTrackerChanges,mergeTrackerData}
 })
