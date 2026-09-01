@@ -134,7 +134,7 @@
     const walk=(item,segments)=>{
       if(item===null||typeof item!=='object'||Array.isArray(item)) {leaves.set('/'+segments.map(encodePath).join('/'),clone(item));return}
       const keys=Object.keys(item).sort()
-      if(!keys.length)return
+      if(!keys.length){leaves.set('/'+segments.map(encodePath).join('/'),{});return}
       for(const key of keys)walk(item[key],[...segments,key])
     }
     walk(toTrackerSyncShape(value),[])
