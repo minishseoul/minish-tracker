@@ -111,21 +111,25 @@
   }
   function toTrackerSyncShape(value) {
     const content=clone(trackerContent(value)||{})
-    if(Array.isArray(content.routines)) {
-      content.__routineItems=Object.fromEntries(content.routines.filter(item=>item&&typeof item.id==='string').map(item=>[item.id,item]))
-      content.__routineOrder=content.routines.filter(item=>item&&typeof item.id==='string').map(item=>item.id)
-      delete content.routines
+    for(const [source,itemsKey,orderKey] of [['routines','__routineItems','__routineOrder'],['mealPresets','__mealPresetItems','__mealPresetOrder']])if(Array.isArray(content[source])) {
+      content[itemsKey]=Object.fromEntries(content[source].filter(item=>item&&typeof item.id==='string').map(item=>[item.id,item]))
+      content[orderKey]=content[source].filter(item=>item&&typeof item.id==='string').map(item=>item.id)
+      delete content[source]
     }
     return content
   }
   function fromTrackerSyncShape(shape) {
-    const content=clone(shape||{}),items=content.__routineItems,order=content.__routineOrder
-    delete content.__routineItems;delete content.__routineOrder
-    if(items&&typeof items==='object'&&!Array.isArray(items)) {
-      const ids=[...(Array.isArray(order)?order:[]),...Object.keys(items).sort()].filter((id,index,list)=>items[id]&&list.indexOf(id)===index)
-      content.routines=ids.map(id=>items[id])
-    } else if(!Array.isArray(content.routines))content.routines=[]
+    const content=clone(shape||{})
+    for(const [target,itemsKey,orderKey] of [['routines','__routineItems','__routineOrder'],['mealPresets','__mealPresetItems','__mealPresetOrder']]) {
+      const items=content[itemsKey],order=content[orderKey]
+      delete content[itemsKey];delete content[orderKey]
+      if(items&&typeof items==='object'&&!Array.isArray(items)) {
+        const ids=[...(Array.isArray(order)?order:[]),...Object.keys(items).sort()].filter((id,index,list)=>items[id]&&list.indexOf(id)===index)
+        content[target]=ids.map(id=>items[id])
+      } else if(!Array.isArray(content[target]))content[target]=[]
+    }
     for(const key of ['records','okr','weeklyTargets','weeklyReviews','dailyQuotes'])if(!content[key]||typeof content[key]!=='object'||Array.isArray(content[key]))content[key]={}
+    if(!content.meals||typeof content.meals!=='object'||Array.isArray(content.meals))content.meals={}
     if(!Array.isArray(content.quoteHistory))content.quoteHistory=[]
     return content
   }
@@ -202,6 +206,23 @@
     merged._sync={...remote._sync,...local._sync,mergeSchema:1,fieldVersions:versions,modifiedAt:at?new Date(at).toISOString():new Date(0).toISOString()}
     return merged
   }
+  function mealStats(meals,dateKeys) {
+    const allowed=new Set(dateKeys||[]),ratings={healthy:0,normal:0,fast:0},places={home:0,out:0,delivery:0}
+    let recorded=0,rated=0,placed=0
+    for(const [date,day] of Object.entries(meals||{})) {
+      if(!allowed.has(date)||!day||typeof day!=='object')continue
+      for(const type of ['breakfast','lunch','dinner']) {
+        const entry=day[type]
+        if(!entry||typeof entry!=='object')continue
+        const hasRating=Object.hasOwn(ratings,entry.rating),hasPlace=Object.hasOwn(places,entry.place),hasDish=typeof entry.dish==='string'&&entry.dish.trim()
+        if(!hasRating&&!hasPlace&&!hasDish)continue
+        recorded++
+        if(hasRating){ratings[entry.rating]++;rated++}
+        if(hasPlace){places[entry.place]++;placed++}
+      }
+    }
+    return {recorded,rated,placed,ratings,places}
+  }
   return {stableStringify,AREAS,dateKey,validDate,weekKey,periodKey,migrateGoals,goalStats,validEvent,sortEvents,replay,totals,spendingWeeks,spendingCategories,
-    trackerContent,trackerLeaves,ensureTrackerVersions,changedTrackerPaths,markTrackerChanges,rebaseTrackerChanges,mergeTrackerData}
+    trackerContent,trackerLeaves,ensureTrackerVersions,changedTrackerPaths,markTrackerChanges,rebaseTrackerChanges,mergeTrackerData,mealStats}
 })

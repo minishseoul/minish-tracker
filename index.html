@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=8">
+  <link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body spellcheck="false" class="web-locked">
 
@@ -129,6 +129,7 @@
         <button class="view-tab active" data-view="tracker">체커보드</button>
         <button class="view-tab" data-view="review">대시보드</button>
         <button class="view-tab" data-view="finance">가계부</button>
+        <button class="view-tab" data-view="meal">식단관리</button>
         <button class="view-tab" data-view="quote">오늘의 문장</button>
       </nav>
 
@@ -261,6 +262,24 @@
         </div>
       </section>
 
+      <section class="main-view meal-view" id="mealView">
+        <div class="meal-toolbar">
+          <div><span class="review-eyebrow">MEAL TRACKER</span><h1 class="review-title">식단관리</h1><p class="feature-help">끼니는 데일리에서 기록하고, 주·월 단위로 흐름을 확인해요.</p></div>
+          <button id="mealPresetOpen" class="today-btn" type="button">내 요리 설정</button>
+        </div>
+        <div class="meal-scroll">
+          <div class="meal-controls">
+            <div class="meal-view-switch" role="tablist" aria-label="식단 보기 방식">
+              <button class="active" data-meal-view="daily" role="tab" aria-selected="true">데일리</button>
+              <button data-meal-view="weekly" role="tab" aria-selected="false">위클리</button>
+              <button data-meal-view="monthly" role="tab" aria-selected="false">먼슬리</button>
+            </div>
+            <div class="meal-date-nav"><button id="mealPrev" class="nav-btn" type="button" aria-label="이전 식단 기간">←</button><strong id="mealPeriodLabel"></strong><button id="mealNext" class="nav-btn" type="button" aria-label="다음 식단 기간">→</button><button id="mealToday" class="today-btn" type="button">오늘</button></div>
+          </div>
+          <div id="mealContent"></div>
+        </div>
+      </section>
+
       <section class="main-view quote-view" id="quoteView">
         <div class="quote-toolbar">
           <div>
@@ -308,6 +327,15 @@
   </div></div>
   <div class="modal-overlay" id="financeCategoryOverlay"><div class="modal finance-modal" role="dialog" aria-modal="true" aria-labelledby="financeCategoryTitle"><h2 id="financeCategoryTitle" class="modal-title">내 카테고리</h2><p class="feature-help">기본 카테고리는 없습니다. 필요한 이름만 직접 추가하세요.</p><div class="finance-inline-category"><input class="modal-input" id="financeCategoryName" maxlength="40" placeholder="새 카테고리" aria-label="카테고리 이름"><button class="today-btn" id="financeCategoryCreate">추가</button></div><div id="financeCategoryList"></div><p id="financeCategoryMessage" role="status" class="finance-status"></p><button id="financeCategoryClose" class="sync-close">닫기</button></div></div>
   <div class="modal-overlay" id="financeDeleteOverlay"><div class="modal finance-modal" role="dialog" aria-modal="true" aria-labelledby="financeDeleteTitle"><h2 id="financeDeleteTitle" class="modal-title">휴지통으로 옮길까요?</h2><p class="feature-help">합계에서 제외되며 휴지통에서 다시 복원할 수 있습니다.</p><div class="modal-actions"><button id="financeDeleteCancel" class="modal-btn cancel">취소</button><button id="financeDeleteConfirm" class="modal-btn confirm">휴지통으로</button></div><p id="financeDeleteMessage" class="finance-status" role="status"></p></div></div>
+
+  <div class="modal-overlay" id="mealPresetOverlay"><div class="modal meal-preset-modal" role="dialog" aria-modal="true" aria-labelledby="mealPresetTitle">
+    <h2 id="mealPresetTitle" class="modal-title">내 요리 설정</h2>
+    <p class="feature-help">자주 먹는 요리만 등록해두세요. 식단 입력에서는 ‘직접 입력’이 항상 첫 번째입니다.</p>
+    <div class="meal-preset-create"><input class="modal-input" id="mealPresetName" maxlength="60" placeholder="예: 밥 + 닭가슴살" aria-label="새 요리 이름"><button class="today-btn" id="mealPresetAdd" type="button">추가</button></div>
+    <div id="mealPresetList" class="meal-preset-list"></div>
+    <p id="mealPresetMessage" class="finance-status" role="status"></p>
+    <button id="mealPresetClose" class="sync-close" type="button">닫기</button>
+  </div></div>
 
   <!-- Context Menu -->
   <div class="context-menu" id="contextMenu">
@@ -462,9 +490,9 @@
   </div>
 
   <script src="supabase-config.js?v=4"></script>
-  <script src="minish-core.js?v=8"></script>
+  <script src="minish-core.js?v=9"></script>
   <script src="platform.js?v=8"></script>
-  <script src="renderer.js?v=4"></script>
+  <script src="renderer.js?v=9"></script>
   <script src="finance.js?v=6"></script>
 </body>
 </html>

@@ -21,6 +21,8 @@ let data = {
   weeklyReviews: {},
   dailyQuotes: {},
   quoteHistory: [],
+  meals: {},
+  mealPresets: [],
   photo: null
 }
 
@@ -34,6 +36,8 @@ let drag              = null
 let pendingDeleteIdx  = null
 const goalOffsets = { year: 0, quarter: 0, month: 0 }
 let goalDashboardScope = 'week'
+let mealViewMode = 'daily'
+let mealDate = new Date()
 
 // ─── Date Helpers ────────────────────────────────────────────────
 
@@ -330,6 +334,182 @@ function persistWeeklyReview() {
   else delete data.weeklyReviews[key]
   document.getElementById('reviewSaveState').textContent = '저장 중…'
   debounceSave()
+}
+
+// ─── Meal tracker ─────────────────────────────────────────────
+
+const MEAL_TYPES = [
+  { key:'breakfast', label:'아침', english:'BREAKFAST' },
+  { key:'lunch', label:'점심', english:'LUNCH' },
+  { key:'dinner', label:'저녁', english:'DINNER' }
+]
+const MEAL_RATINGS = [
+  { key:'healthy', emoji:'🥗', label:'건강함' },
+  { key:'normal', emoji:'🍚', label:'보통' },
+  { key:'fast', emoji:'🍔', label:'패스트푸드' }
+]
+const MEAL_PLACES = [
+  { key:'home', emoji:'⌂', label:'집밥' },
+  { key:'out', emoji:'↗', label:'외식' },
+  { key:'delivery', emoji:'🛵', label:'배달' }
+]
+
+function mealDateFromKey(key) { return new Date(`${key}T12:00:00`) }
+function mealStartOfWeek(date) {
+  const start = new Date(date)
+  start.setHours(12,0,0,0)
+  start.setDate(start.getDate()-((start.getDay()+6)%7))
+  return start
+}
+function mealWeekDates(date=mealDate) {
+  const start=mealStartOfWeek(date)
+  return Array.from({length:7},(_,index)=>{const day=new Date(start);day.setDate(start.getDate()+index);return day})
+}
+function mealMonthDates(date=mealDate) {
+  const first=new Date(date.getFullYear(),date.getMonth(),1,12),start=new Date(first)
+  start.setDate(1-first.getDay())
+  return Array.from({length:42},(_,index)=>{const day=new Date(start);day.setDate(start.getDate()+index);return day})
+}
+function mealExists(entry) { return Boolean(entry&&(entry.dish?.trim()||MEAL_RATINGS.some(item=>item.key===entry.rating)||MEAL_PLACES.some(item=>item.key===entry.place))) }
+function mealEntry(dateKey,type) { return data.meals?.[dateKey]?.[type] || {} }
+function cleanMealDay(dateKey) {
+  if(!data.meals[dateKey])return
+  for(const type of MEAL_TYPES)if(!mealExists(data.meals[dateKey][type]))delete data.meals[dateKey][type]
+  if(!Object.keys(data.meals[dateKey]).length)delete data.meals[dateKey]
+}
+function updateMeal(dateKey,type,change,immediate=true) {
+  if(!data.meals[dateKey])data.meals[dateKey]={}
+  data.meals[dateKey][type]={...mealEntry(dateKey,type),...change}
+  cleanMealDay(dateKey)
+  const state=document.getElementById('mealSaveState');if(state)state.textContent='저장 중…'
+  if(immediate)save();else debounceSave()
+}
+function mealPeriodDates() {
+  if(mealViewMode==='weekly')return mealWeekDates()
+  if(mealViewMode==='monthly')return mealMonthDates().filter(date=>date.getMonth()===mealDate.getMonth())
+  return [new Date(mealDate)]
+}
+function mealPeriodLabel() {
+  if(mealViewMode==='daily')return `${mealDate.getFullYear()}년 ${mealDate.getMonth()+1}월 ${mealDate.getDate()}일 · ${DAY_KO[mealDate.getDay()]}요일`
+  if(mealViewMode==='weekly')return formatWeekRange(mealWeekDates())
+  return `${mealDate.getFullYear()}년 ${mealDate.getMonth()+1}월`
+}
+function mealOptionButtons(items,value,attribute) {
+  return items.map(item=>`<button type="button" class="meal-choice${value===item.key?' active':''}" ${attribute}="${item.key}" aria-pressed="${value===item.key}" title="${item.label}"><span>${item.emoji}</span><small>${item.label}</small></button>`).join('')
+}
+function renderMealDaily() {
+  const dateKey=toDK(mealDate)
+  const presetOptions=data.mealPresets.map(item=>`<option value="${esc(item.id)}">${esc(item.name)}</option>`).join('')
+  return `<div class="meal-daily-intro"><div><span class="review-panel-kicker">${dateKey===todayDK()?'TODAY':'DAILY MEALS'}</span><h2>${dateKey===todayDK()?'오늘 무엇을 먹었나요?':'이날 무엇을 먹었나요?'}</h2></div><span id="mealSaveState" class="review-save-state">자동 저장</span></div>
+    <div class="meal-daily-grid">${MEAL_TYPES.map(type=>{
+      const entry=mealEntry(dateKey,type.key),preset=data.mealPresets.find(item=>item.id===entry.presetId)
+      return `<article class="meal-card" data-meal-card="${type.key}">
+        <div class="meal-card-head"><div><span>${type.english}</span><h3>${type.label}</h3></div><button type="button" class="meal-clear" data-meal-clear="${type.key}" ${mealExists(entry)?'':'hidden'}>지우기</button></div>
+        <fieldset class="meal-fieldset"><legend>식단 상태</legend><div class="meal-rating-options">${mealOptionButtons(MEAL_RATINGS,entry.rating,'data-meal-rating').replaceAll('data-meal-rating=',`data-meal-type="${type.key}" data-meal-rating=`)}</div></fieldset>
+        <fieldset class="meal-fieldset"><legend>먹은 장소</legend><div class="meal-place-options">${mealOptionButtons(MEAL_PLACES,entry.place,'data-meal-place').replaceAll('data-meal-place=',`data-meal-type="${type.key}" data-meal-place=`)}</div></fieldset>
+        <label class="meal-dish-label"><span>먹은 메뉴</span><select class="meal-dish-select" data-meal-select="${type.key}" aria-label="${type.label} 메뉴 선택"><option value="custom">직접 입력</option>${presetOptions}</select></label>
+        <input class="meal-custom-input" data-meal-custom="${type.key}" maxlength="120" placeholder="직접 메뉴를 입력하세요" aria-label="${type.label} 직접 입력" value="${preset?'':esc(entry.dish||'')}" ${preset?'hidden':''}>
+      </article>`
+    }).join('')}</div>`
+}
+function renderMealBreakdown(title,counts,total,options) {
+  return `<article class="meal-breakdown"><div class="meal-breakdown-head"><h3>${title}</h3><span>${total}끼니 기준</span></div>${options.map(option=>{
+    const count=counts[option.key]||0,pct=total?Math.round(count/total*100):0
+    return `<div class="meal-breakdown-row"><span>${option.emoji} ${option.label}</span><strong>${count} · ${pct}%</strong><div><i style="width:${pct}%"></i></div></div>`
+  }).join('')}</article>`
+}
+function renderMealInsights(dates) {
+  const stats=MinishCore.mealStats(data.meals,dates.map(toDK))
+  return `<div class="meal-insights"><div class="meal-insight-total"><span>기록한 식사</span><strong>${stats.recorded}<small>끼니</small></strong></div>${renderMealBreakdown('식단 상태',stats.ratings,stats.rated,MEAL_RATINGS)}${renderMealBreakdown('집밥 · 외식 · 배달',stats.places,stats.placed,MEAL_PLACES)}</div>`
+}
+function mealSummary(entry) {
+  if(!mealExists(entry))return '<span class="meal-empty-mark">—</span>'
+  const rating=MEAL_RATINGS.find(item=>item.key===entry.rating),place=MEAL_PLACES.find(item=>item.key===entry.place)
+  return `<span class="meal-summary-icons">${rating?.emoji||'·'}${place?.emoji||''}</span><span class="meal-summary-dish">${esc(entry.dish||'메뉴 미입력')}</span>`
+}
+function renderMealWeekly() {
+  const dates=mealWeekDates()
+  return `${renderMealInsights(dates)}<p class="meal-readonly-hint">날짜를 누르면 데일리 기록 화면으로 이동해요.</p><div class="meal-week-grid">${dates.map(date=>{
+    const key=toDK(date),today=key===todayDK()
+    return `<button type="button" class="meal-week-day${today?' today':''}" data-meal-day="${key}"><div class="meal-week-head"><span>${date.getMonth()+1}/${date.getDate()}</span><strong>${DAY_KO[date.getDay()]}</strong></div>${MEAL_TYPES.map(type=>`<div class="meal-week-row"><small>${type.label}</small>${mealSummary(mealEntry(key,type.key))}</div>`).join('')}</button>`
+  }).join('')}</div>`
+}
+function renderMealMonthly() {
+  const dates=mealMonthDates(),monthDates=dates.filter(date=>date.getMonth()===mealDate.getMonth())
+  return `${renderMealInsights(monthDates)}<p class="meal-readonly-hint">날짜를 누르면 데일리 기록 화면으로 이동해요.</p><div class="meal-calendar"><div class="meal-calendar-weekdays">${DAY_KO.map(day=>`<span>${day}</span>`).join('')}</div><div class="meal-calendar-grid">${dates.map(date=>{
+    const key=toDK(date),entries=MEAL_TYPES.map(type=>mealEntry(key,type.key)),recorded=entries.filter(mealExists),outside=date.getMonth()!==mealDate.getMonth()
+    return `<button type="button" class="meal-calendar-day${outside?' outside':''}${key===todayDK()?' today':''}" data-meal-day="${key}" aria-label="${date.getMonth()+1}월 ${date.getDate()}일, ${recorded.length}끼니 기록"><span class="meal-calendar-number">${date.getDate()}</span><span class="meal-calendar-emojis">${entries.map(entry=>MEAL_RATINGS.find(item=>item.key===entry.rating)?.emoji||'').join('')}</span><small>${recorded.length?`${recorded.length}/3`:''}</small></button>`
+  }).join('')}</div></div>`
+}
+function renderMealTracker() {
+  document.querySelectorAll('[data-meal-view]').forEach(button=>{
+    const active=button.dataset.mealView===mealViewMode
+    button.classList.toggle('active',active);button.setAttribute('aria-selected',String(active))
+  })
+  document.getElementById('mealPeriodLabel').textContent=mealPeriodLabel()
+  document.getElementById('mealContent').innerHTML=mealViewMode==='daily'?renderMealDaily():mealViewMode==='weekly'?renderMealWeekly():renderMealMonthly()
+  if(mealViewMode==='daily') {
+    const dateKey=toDK(mealDate)
+    MEAL_TYPES.forEach(type=>{
+      const entry=mealEntry(dateKey,type.key),select=document.querySelector(`[data-meal-select="${type.key}"]`)
+      select.value=data.mealPresets.some(item=>item.id===entry.presetId)?entry.presetId:'custom'
+    })
+  }
+}
+function renderMealPresets() {
+  const list=document.getElementById('mealPresetList')
+  list.innerHTML=data.mealPresets.length?data.mealPresets.map(item=>`<div class="meal-preset-row"><input class="modal-input" maxlength="60" data-meal-preset-name="${esc(item.id)}" aria-label="${esc(item.name)} 이름" value="${esc(item.name)}"><button class="today-btn" type="button" data-meal-preset-save="${esc(item.id)}">저장</button><button class="meal-preset-delete" type="button" data-meal-preset-delete="${esc(item.id)}">삭제</button></div>`).join(''):'<div class="review-empty">등록한 요리가 없어요. 자주 먹는 메뉴부터 추가해 보세요.</div>'
+}
+function addMealPreset() {
+  const input=document.getElementById('mealPresetName'),name=input.value.trim(),message=document.getElementById('mealPresetMessage')
+  if(!name){message.textContent='요리 이름을 입력해 주세요.';return}
+  if(data.mealPresets.some(item=>item.name.toLocaleLowerCase()===name.toLocaleLowerCase())){message.textContent='이미 등록된 요리입니다.';return}
+  data.mealPresets.push({id:crypto.randomUUID(),name});input.value='';message.textContent='요리를 저장했습니다.';renderMealPresets();if(activeView==='meal')renderMealTracker();save()
+}
+function wireMealTracker() {
+  document.querySelectorAll('[data-meal-view]').forEach(button=>button.addEventListener('click',()=>{mealViewMode=button.dataset.mealView;renderMealTracker()}))
+  const move=amount=>{
+    if(mealViewMode==='monthly')mealDate=new Date(mealDate.getFullYear(),mealDate.getMonth()+amount,1,12)
+    else {mealDate=new Date(mealDate);mealDate.setDate(mealDate.getDate()+amount*(mealViewMode==='weekly'?7:1))}
+    renderMealTracker()
+  }
+  document.getElementById('mealPrev').addEventListener('click',()=>move(-1));document.getElementById('mealNext').addEventListener('click',()=>move(1))
+  document.getElementById('mealToday').addEventListener('click',()=>{mealDate=new Date();renderMealTracker()})
+  document.getElementById('mealContent').addEventListener('click',event=>{
+    const dateButton=event.target.closest('[data-meal-day]')
+    if(dateButton){mealDate=mealDateFromKey(dateButton.dataset.mealDay);mealViewMode='daily';renderMealTracker();return}
+    const rating=event.target.closest('[data-meal-rating]'),place=event.target.closest('[data-meal-place]'),clear=event.target.closest('[data-meal-clear]'),dateKey=toDK(mealDate)
+    if(rating){updateMeal(dateKey,rating.dataset.mealType,{rating:rating.dataset.mealRating});renderMealTracker()}
+    else if(place){updateMeal(dateKey,place.dataset.mealType,{place:place.dataset.mealPlace});renderMealTracker()}
+    else if(clear){if(data.meals[dateKey])delete data.meals[dateKey][clear.dataset.mealClear];cleanMealDay(dateKey);save();renderMealTracker()}
+  })
+  document.getElementById('mealContent').addEventListener('change',event=>{
+    const select=event.target.closest('[data-meal-select]');if(!select)return
+    const dateKey=toDK(mealDate),type=select.dataset.mealSelect,preset=data.mealPresets.find(item=>item.id===select.value)
+    updateMeal(dateKey,type,{presetId:preset?.id||null,dish:preset?.name||''});renderMealTracker()
+  })
+  document.getElementById('mealContent').addEventListener('input',event=>{
+    const input=event.target.closest('[data-meal-custom]');if(!input)return
+    updateMeal(toDK(mealDate),input.dataset.mealCustom,{presetId:null,dish:input.value.slice(0,120)},false)
+  })
+  const overlay=document.getElementById('mealPresetOverlay')
+  document.getElementById('mealPresetOpen').addEventListener('click',()=>{renderMealPresets();document.getElementById('mealPresetMessage').textContent='';overlay.classList.add('visible')})
+  document.getElementById('mealPresetClose').addEventListener('click',()=>overlay.classList.remove('visible'))
+  overlay.addEventListener('click',event=>{if(event.target===overlay)overlay.classList.remove('visible')})
+  document.getElementById('mealPresetAdd').addEventListener('click',addMealPreset)
+  document.getElementById('mealPresetName').addEventListener('keydown',event=>{if(event.key==='Enter')addMealPreset()})
+  document.getElementById('mealPresetList').addEventListener('click',event=>{
+    const saveButton=event.target.closest('[data-meal-preset-save]'),deleteButton=event.target.closest('[data-meal-preset-delete]'),id=saveButton?.dataset.mealPresetSave||deleteButton?.dataset.mealPresetDelete
+    if(!id)return
+    const index=data.mealPresets.findIndex(item=>item.id===id);if(index<0)return
+    if(deleteButton){data.mealPresets.splice(index,1);document.getElementById('mealPresetMessage').textContent='등록 메뉴만 삭제했습니다. 이전 식단 기록은 유지됩니다.'}
+    else {
+      const value=document.querySelector(`[data-meal-preset-name="${CSS.escape(id)}"]`).value.trim()
+      if(!value||data.mealPresets.some((item,i)=>i!==index&&item.name.toLocaleLowerCase()===value.toLocaleLowerCase())){document.getElementById('mealPresetMessage').textContent='비어 있거나 중복된 이름은 저장할 수 없습니다.';return}
+      data.mealPresets[index].name=value;document.getElementById('mealPresetMessage').textContent='이름을 저장했습니다.'
+    }
+    renderMealPresets();save();if(activeView==='meal')renderMealTracker()
+  })
 }
 
 // ─── Daily Sentence ────────────────────────────────────────────
@@ -1201,6 +1381,8 @@ async function save() {
   } else {
     const reviewState = document.getElementById('reviewSaveState')
     if (reviewState) reviewState.textContent = '저장됨'
+    const mealState = document.getElementById('mealSaveState')
+    if (mealState) mealState.textContent = '저장됨'
   }
 }
 
@@ -1219,6 +1401,7 @@ function wire() {
         view.classList.toggle('active', view.id === `${activeView}View`)
       })
       if (activeView === 'review') renderReview()
+      if (activeView === 'meal') renderMealTracker()
       if (activeView === 'quote') renderDailyQuoteView()
     })
   })
@@ -1269,6 +1452,7 @@ function wire() {
   document.getElementById('todayReviewBtn').addEventListener('click', () => moveWeek(0))
   document.getElementById('weeklyReviewComment').addEventListener('input', persistWeeklyReview)
   document.getElementById('quoteGenerateBtn').addEventListener('click', generateQuote)
+  wireMealTracker()
 
   const tbody = document.getElementById('routineBody')
 
@@ -1388,6 +1572,7 @@ function wire() {
     renderGrid()
     renderDailyQuoteView()
     if (activeView === 'review') renderReview()
+    if (activeView === 'meal') renderMealTracker()
   })
 }
 
@@ -1407,6 +1592,8 @@ function normalizeDataShape() {
   if (!data.weeklyReviews || typeof data.weeklyReviews !== 'object') data.weeklyReviews = {}
   if (!data.dailyQuotes || typeof data.dailyQuotes !== 'object') data.dailyQuotes = {}
   if (!Array.isArray(data.quoteHistory)) data.quoteHistory = []
+  if (!data.meals || typeof data.meals !== 'object' || Array.isArray(data.meals)) data.meals = {}
+  if (!Array.isArray(data.mealPresets)) data.mealPresets = []
   let removedAiQuotes = MinishCore.migrateGoals(data)
   Object.keys(data.dailyQuotes).forEach(key => {
     if (['openai', 'codex'].includes(data.dailyQuotes[key]?.generatedBy)) {
@@ -1431,6 +1618,7 @@ async function init() {
   renderOKR()
   renderGrid()
   wire()
+  renderMealTracker()
   renderDailyQuoteView()
   if (removedAiQuotes) save()
 }
