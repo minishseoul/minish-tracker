@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=9">
+  <link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body spellcheck="false" class="web-locked">
 
@@ -185,7 +185,7 @@
       <section class="main-view review-view" id="reviewView">
         <div class="review-toolbar">
           <div>
-            <span class="review-eyebrow">WEEKLY REVIEW</span>
+            <span class="review-eyebrow">ALL-IN-ONE DASHBOARD</span>
             <h1 class="review-title" id="reviewWeekTitle"></h1>
             <p class="review-range" id="reviewWeekRange"></p>
           </div>
@@ -196,54 +196,52 @@
           </div>
         </div>
 
-        <div class="review-scroll">
-          <article class="review-panel goal-dashboard">
-            <div class="review-panel-header"><div><span class="review-panel-kicker">OBJECTIVES</span><h2>분야별 목표 달성</h2></div><label class="goal-year-label">집계 연도 <input id="goalDashboardYear" type="number" min="2000" max="2199" aria-label="목표 집계 연도"></label></div>
-            <p class="feature-help">작성한 목표만 집계합니다. 연간·분기·월·주차 목표를 각각 독립적으로 체크해요.</p>
-            <div class="goal-summary" id="goalSummary"></div>
-            <div class="goal-area-summary" id="goalAreaSummary"></div>
-            <div class="goal-history" id="goalHistory"></div>
-          </article>
-          <div class="review-summary-grid">
-            <article class="review-card review-card-primary">
-              <span class="review-card-label">주간 루틴 달성률</span>
-              <strong class="review-card-value" id="reviewPercent">0%</strong>
-              <div class="review-progress"><span id="reviewProgressFill"></span></div>
-            </article>
-            <article class="review-card">
-              <span class="review-card-label">완료한 루틴 체크</span>
-              <strong class="review-card-value" id="reviewDone">0 / 0</strong>
-              <span class="review-card-detail">달성·양호 기준</span>
-            </article>
-            <article class="review-card">
-              <span class="review-card-label">가장 좋았던 루틴</span>
-              <strong class="review-card-value review-card-routine" id="reviewBest">—</strong>
-              <span class="review-card-detail" id="reviewBestDetail">기록을 시작해 보세요</span>
-            </article>
+        <div class="review-scroll dashboard-scroll">
+          <div class="dashboard-metrics" aria-label="핵심 현황">
+            <article class="dashboard-metric primary"><span>주간 목표</span><strong id="dashboardGoalMetric">—</strong><small id="dashboardGoalMetricDetail">작성한 목표 기준</small></article>
+            <article class="dashboard-metric"><span>주간 루틴</span><strong id="dashboardRoutineMetric">0%</strong><small id="dashboardRoutineMetricDetail">0 / 0 완료</small></article>
+            <article class="dashboard-metric expense"><span>월간 지출</span><strong id="dashboardExpenseMetric">0원</strong><small id="dashboardExpenseMetricDetail">이번 달</small></article>
+            <article class="dashboard-metric meal"><span>주간 식사 기록</span><strong id="dashboardMealMetric">0끼니</strong><small id="dashboardMealMetricDetail">건강·장소 분석</small></article>
           </div>
 
-          <div class="review-content-grid">
-            <article class="review-panel">
-              <div class="review-panel-header">
-                <div><span class="review-panel-kicker">ROUTINES</span><h2>루틴별 달성</h2></div>
-              </div>
-              <div class="routine-review-list" id="routineReviewList"></div>
+          <div class="dashboard-grid">
+            <article class="review-panel dashboard-panel dashboard-objectives">
+              <div class="review-panel-header"><div><span class="review-panel-kicker">OBJECTIVES</span><h2>목표 현황</h2></div><button class="dashboard-open" type="button" data-dashboard-view="tracker">목표 관리 →</button></div>
+              <div class="dashboard-goal-scopes" id="dashboardGoalScopes"></div>
+              <div class="dashboard-goal-areas" id="dashboardGoalAreas"></div>
             </article>
 
-            <div class="review-side-stack">
-              <article class="review-panel">
-                <div class="review-panel-header"><div><span class="review-panel-kicker">STATUS</span><h2>상태 분포</h2></div></div>
-                <div class="status-review-list" id="statusReviewList"></div>
-              </article>
+            <article class="review-panel dashboard-panel dashboard-routines">
+              <div class="review-panel-header"><div><span class="review-panel-kicker">CHECKERBOARD</span><h2>이번 주 루틴</h2></div><button class="dashboard-open" type="button" data-dashboard-view="tracker">체크하기 →</button></div>
+              <div class="dashboard-routine-list" id="dashboardRoutineList"></div>
+            </article>
 
-              <article class="review-panel review-note-panel">
-                <div class="review-panel-header">
-                  <div><span class="review-panel-kicker">NOTE</span><h2>이번 주 한마디</h2></div>
-                  <span class="review-save-state" id="reviewSaveState">자동 저장</span>
-                </div>
-                <textarea id="weeklyReviewComment" class="weekly-review-comment" maxlength="180" rows="3" placeholder="이번 주에 잘한 점, 다음 주에 이어갈 점을 1~2줄로 남겨보세요."></textarea>
-              </article>
-            </div>
+            <article class="review-panel dashboard-panel dashboard-finance">
+              <div class="review-panel-header"><div><span class="review-panel-kicker">MONEY</span><h2 id="dashboardFinanceTitle">이번 달 가계부</h2></div><button class="dashboard-open" type="button" data-dashboard-view="finance">가계부 열기 →</button></div>
+              <div class="dashboard-finance-totals" id="dashboardFinanceTotals"></div>
+              <div class="dashboard-category-list" id="dashboardFinanceCategories"></div>
+            </article>
+
+            <article class="review-panel dashboard-panel dashboard-meals">
+              <div class="review-panel-header"><div><span class="review-panel-kicker">MEALS</span><h2>이번 주 식단</h2></div><button class="dashboard-open" type="button" data-dashboard-view="meal">식단 기록 →</button></div>
+              <div class="dashboard-meal-block" id="dashboardMealQuality"></div>
+              <div class="dashboard-meal-block" id="dashboardMealPlaces"></div>
+            </article>
+
+            <article class="review-panel dashboard-panel dashboard-quote">
+              <div class="review-panel-header"><div><span class="review-panel-kicker">TODAY'S SENTENCE</span><h2>오늘의 문장</h2></div><button class="dashboard-open" type="button" data-dashboard-view="quote">문장 열기 →</button></div>
+              <p class="dashboard-quote-english" id="dashboardQuoteEnglish"></p>
+              <p class="dashboard-quote-korean" id="dashboardQuoteKorean"></p>
+              <span class="dashboard-quote-origin" id="dashboardQuoteOrigin"></span>
+            </article>
+
+            <article class="review-panel dashboard-panel review-note-panel dashboard-note">
+              <div class="review-panel-header">
+                <div><span class="review-panel-kicker">WEEKLY NOTE</span><h2>이번 주 한마디</h2></div>
+                <span class="review-save-state" id="reviewSaveState">자동 저장</span>
+              </div>
+              <textarea id="weeklyReviewComment" class="weekly-review-comment" maxlength="180" rows="3" placeholder="이번 주에 잘한 점, 다음 주에 이어갈 점을 1~2줄로 남겨보세요."></textarea>
+            </article>
           </div>
         </div>
       </section>
@@ -490,9 +488,9 @@
   </div>
 
   <script src="supabase-config.js?v=4"></script>
-  <script src="minish-core.js?v=9"></script>
+  <script src="minish-core.js?v=10"></script>
   <script src="platform.js?v=8"></script>
-  <script src="renderer.js?v=9"></script>
-  <script src="finance.js?v=6"></script>
+  <script src="renderer.js?v=10"></script>
+  <script src="finance.js?v=10"></script>
 </body>
 </html>

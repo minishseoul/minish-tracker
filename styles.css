@@ -2495,6 +2495,77 @@ body {
   .finance-modal { width:100%; max-height:88dvh; }
 }
 
+/* ─── All-in-one dashboard ───────────────────── */
+.dashboard-scroll { padding-bottom:28px; }
+.review-view .review-range { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dashboard-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:12px; }
+.dashboard-metric { min-width:0; min-height:104px; display:flex; flex-direction:column; justify-content:space-between; padding:16px; border:1px solid #dce7f6; border-radius:15px; background:linear-gradient(145deg,#fff,#f4f8ff); box-shadow:0 7px 20px rgba(50,91,145,.05); }
+.dashboard-metric > span { color:#7083a0; font-size:9px; font-weight:800; letter-spacing:.8px; }
+.dashboard-metric > strong { overflow:hidden; color:#254d7d; font-size:24px; line-height:1.1; letter-spacing:-.8px; text-overflow:ellipsis; white-space:nowrap; }
+.dashboard-metric > small { color:#8495ad; font-size:9px; white-space:nowrap; }
+.dashboard-metric.primary { border-color:transparent; background:linear-gradient(135deg,#69afff,#2e78ec); box-shadow:0 12px 26px rgba(47,125,246,.2); }
+.dashboard-metric.primary > span,.dashboard-metric.primary > small { color:rgba(255,255,255,.8); }
+.dashboard-metric.primary > strong { color:#fff; }
+.dashboard-metric.expense > strong { color:#c94755; }
+.dashboard-metric.meal > strong { color:#3975bb; }
+.dashboard-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; align-items:start; }
+.dashboard-panel { min-width:0; }
+.dashboard-panel .review-panel-header { margin-bottom:15px; }
+.dashboard-open { flex-shrink:0; border:0; background:transparent; color:#3774c4; font:inherit; font-size:9px; font-weight:700; cursor:pointer; }
+.dashboard-goal-scopes { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; margin-bottom:16px; }
+.dashboard-goal-scopes > div { min-width:0; padding:10px; border:1px solid #e4ecf7; border-radius:10px; background:#f8fbff; }
+.dashboard-goal-scopes span,.dashboard-goal-scopes small { display:block; color:#8091a9; font-size:8px; white-space:nowrap; }
+.dashboard-goal-scopes strong { display:block; margin:5px 0 4px; color:#2b659f; font-size:17px; }
+.dashboard-goal-areas { display:flex; flex-direction:column; gap:7px; }
+.dashboard-goal-row { display:grid; grid-template-columns:18px 50px minmax(0,1fr); gap:7px; align-items:start; padding:9px 10px; border-radius:10px; background:#f7faff; color:#91a0b5; }
+.dashboard-goal-row > span { color:#9aabc2; font-size:12px; }
+.dashboard-goal-row > strong { color:#45668e; font-size:10px; }
+.dashboard-goal-row > p { min-width:0; overflow:hidden; margin:0; color:#687b98; font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+.dashboard-goal-row.done { background:#edf5ff; }.dashboard-goal-row.done > span { color:#2c79e5; }.dashboard-goal-row.done > p { color:#315d93; }
+.dashboard-routine-list { display:flex; flex-direction:column; gap:13px; }
+.dashboard-more { margin:2px 0 0; color:#8495ad; font-size:9px; text-align:right; }
+.dashboard-finance-totals { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin-bottom:15px; }
+.dashboard-finance-totals > div { min-width:0; padding:10px; border-radius:10px; background:#f7faff; }
+.dashboard-finance-totals span { display:block; margin-bottom:5px; color:#8292a9; font-size:8px; }
+.dashboard-finance-totals strong { display:block; overflow:hidden; font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
+.dashboard-category-list h3 { margin:0 0 9px; color:#617591; font-size:9px; }
+.dashboard-category-list > div { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:5px 10px; align-items:center; margin-top:8px; color:#637895; font-size:9px; }
+.dashboard-category-list > div > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dashboard-category-list > div > strong { color:#c64b57; font-size:9px; white-space:nowrap; }
+.dashboard-category-list i,.dashboard-breakdown-row i { grid-column:1/-1; height:4px; overflow:hidden; border-radius:4px; background:#edf3fb; }
+.dashboard-category-list i b,.dashboard-breakdown-row i b { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#91bdff,#4387e9); }
+.dashboard-meal-block + .dashboard-meal-block { margin-top:15px; padding-top:14px; border-top:1px solid #edf2f8; }
+.dashboard-breakdown-title { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.dashboard-breakdown-title strong { color:#506a8c; font-size:10px; }.dashboard-breakdown-title span { color:#8a9ab0; font-size:8px; }
+.dashboard-breakdown-list { display:flex; flex-direction:column; gap:9px; }
+.dashboard-breakdown-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:5px 10px; align-items:center; color:#657994; font-size:9px; }
+.dashboard-breakdown-row > strong { color:#356eae; font-size:9px; }
+.dashboard-quote,.dashboard-note { grid-column:1/-1; }
+.dashboard-quote { background:linear-gradient(135deg,#edf5ff,#fff 62%,#f0f6ff); }
+.dashboard-quote-english,.dashboard-quote-korean { overflow:hidden; margin:0; color:#284d7a; text-overflow:ellipsis; white-space:nowrap; }
+.dashboard-quote-english { font-size:15px; font-weight:700; letter-spacing:-.2px; }
+.dashboard-quote-korean { margin-top:9px; color:#617796; font-size:12px; }
+.dashboard-quote-origin { display:block; margin-top:13px; color:#8ba0bb; font-size:8px; letter-spacing:.8px; white-space:nowrap; }
+.dashboard-note .weekly-review-comment { min-height:66px; }
+
+@media(max-width:900px) {
+  .dashboard-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:760px) {
+  .app-container { display:flex; flex-direction:column; }
+  .main-content { order:1; }
+  .sidebar { order:2; margin-top:10px; }
+  .dashboard-metrics { gap:7px; }
+  .dashboard-metric { min-height:92px; padding:13px; border-radius:13px; }
+  .dashboard-metric > strong { font-size:21px; }
+  .dashboard-grid { grid-template-columns:minmax(0,1fr); gap:9px; }
+  .dashboard-quote,.dashboard-note { grid-column:auto; }
+  .dashboard-goal-scopes { gap:5px; }
+  .dashboard-goal-scopes > div { padding:8px; }
+  .dashboard-goal-scopes strong { font-size:15px; }
+  .dashboard-finance-totals strong { font-size:10px; }
+}
+
 .private-gate {
   position: fixed;
   inset: 0;
@@ -2872,6 +2943,11 @@ body {
   .meal-calendar-day small { right:4px; bottom:4px; }
   .meal-preset-row { flex-wrap:wrap; }
   .meal-preset-row input { flex-basis:100%; }
+
+  /* Mobile starts with the active tools; photo, stats and goal editor follow below. */
+  .app-container { display:flex; flex-direction:column; }
+  .main-content { order:1; }
+  .sidebar { order:2; margin-top:10px; }
 }
 
 /* Keep taps at the current scale, while retaining scrolling and pinch zoom. */

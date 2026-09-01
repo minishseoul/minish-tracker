@@ -11,6 +11,13 @@
   let currentStatus='가계부 저장소 확인 중…'
   let chartWeeks=[],selectedSpendingWeek=null
   function status(message,error=false){currentStatus=message;$('financeStatus').textContent=message;$('financeStatus').classList.toggle('error',error)}
+  function dashboardSnapshot(month) {
+    if(!ready||!/^[0-9]{4}-[0-9]{2}$/.test(month||''))return {ready:false}
+    const monthEntries=state.entries.filter(entry=>entry.date.startsWith(`${month}-`))
+    return {ready:true,month,totals:C.totals(monthEntries),categories:C.spendingCategories(state.entries,state.categories,month).rows}
+  }
+  function notifyDashboard(){window.dispatchEvent(new CustomEvent('minish-finance-updated'))}
+  window.MinishFinance={getDashboardSnapshot:dashboardSnapshot}
 
   function database() {
     if(dbPromise)return dbPromise
@@ -167,6 +174,7 @@
       const controls=showTrash?`<button data-restore="${entry.id}">복원</button>`:`<button data-edit="${entry.id}">수정</button><button data-delete="${entry.id}">삭제</button>`
       return `<div class="finance-row"><span class="finance-symbol ${entry.type}">${symbols[entry.type]}</span><div class="finance-description"><strong>${escape(entry.note)}</strong><small>${escape(entry.date)} · ${escape(category)}</small></div><strong class="finance-value ${entry.type}">${symbols[entry.type]} ${money(entry.amount)}</strong><div class="finance-row-actions">${controls}</div></div>`
     }).join(''):`<div class="review-empty">${showTrash?'휴지통이 비어 있어요.':'아직 기록이 없어요. 만들기를 눌러 첫 내역을 남겨보세요.'}</div>`
+    notifyDashboard()
   }
   function renderCategories(selected='') {
     $('financeCategory').innerHTML='<option value="">카테고리 선택</option>'+state.categories.map(c=>`<option value="${c.id}">${escape(c.name)}</option>`).join('')
@@ -204,7 +212,7 @@
   }
   async function init() {
     $('financeMonth').value=C.dateKey(new Date()).slice(0,7)
-    try{await reload();ready=true;status('이 기기에 저장됨 · 가계부 연결 확인 중…');queueSync()}
+    try{await reload();ready=true;notifyDashboard();status('이 기기에 저장됨 · 가계부 연결 확인 중…');queueSync()}
     catch(error){status(error.message,true);$('financeCreate').disabled=true}
     $('financeChart').addEventListener('click',event=>{
       const target=event.target.closest('[data-spending-week]')

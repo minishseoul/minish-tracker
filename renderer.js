@@ -35,7 +35,6 @@ let ctxTarget         = null
 let drag              = null
 let pendingDeleteIdx  = null
 const goalOffsets = { year: 0, quarter: 0, month: 0 }
-let goalDashboardScope = 'week'
 let mealViewMode = 'daily'
 let mealDate = new Date()
 
@@ -263,8 +262,21 @@ function getRoutineReviewData(routine, dates) {
   return { routine, target, done, pct, statuses }
 }
 
+function dashboardMoney(value) { return `${Number(value||0).toLocaleString('ko-KR')}원` }
+function dashboardQuoteForToday() {
+  const saved=data.dailyQuotes[todayDK()]
+  if(saved?.english&&saved?.korean)return saved
+  const day=Math.floor(new Date(`${todayDK()}T12:00:00`).getTime()/86400000)
+  return FALLBACK_QUOTES[((day%FALLBACK_QUOTES.length)+FALLBACK_QUOTES.length)%FALLBACK_QUOTES.length]
+}
+function renderDashboardBreakdown(target,title,counts,total,options) {
+  document.getElementById(target).innerHTML=`<div class="dashboard-breakdown-title"><strong>${title}</strong><span>${total?`${total}끼니 기준`:'선택 기록 없음'}</span></div><div class="dashboard-breakdown-list">${options.map(option=>{
+    const count=counts[option.key]||0,pct=total?Math.round(count/total*100):0
+    return `<div class="dashboard-breakdown-row"><span>${option.emoji} ${option.label}</span><strong>${count} · ${pct}%</strong><i><b style="width:${pct}%"></b></i></div>`
+  }).join('')}</div>`
+}
+
 function renderReview() {
-  renderGoalDashboard()
   const dates = getWeekDates(weekOffset)
   const weekInfo = getISOWeekInfo(dates[0])
   const routineStats = data.routines
@@ -274,53 +286,61 @@ function renderReview() {
   const done = routineStats.reduce((sum, item) => sum + item.done, 0)
   const pct = total > 0 ? Math.round(done / total * 100) : 0
 
-  document.getElementById('reviewWeekTitle').textContent = `${weekInfo.year}년 ${weekInfo.week}주차`
-  document.getElementById('reviewWeekRange').textContent = formatWeekRange(dates)
-  document.getElementById('reviewPercent').textContent = `${pct}%`
-  document.getElementById('reviewProgressFill').style.width = `${pct}%`
-  document.getElementById('reviewDone').textContent = `${done} / ${total}`
+  document.getElementById('reviewWeekTitle').textContent = `${weekInfo.year}년 ${weekInfo.week}주차 대시보드`
+  document.getElementById('reviewWeekRange').textContent = `${formatWeekRange(dates)} · 목표부터 돈과 식사까지 한눈에`
+  renderGoalDashboard()
 
-  const ranked = routineStats
-    .filter(item => item.done > 0)
-    .sort((a, b) => b.pct - a.pct || b.done - a.done)
-  const best = ranked[0]
-  document.getElementById('reviewBest').textContent = best ? best.routine.name : '—'
-  document.getElementById('reviewBestDetail').textContent = best
-    ? `${best.done}/${best.target} 완료 · ${best.pct}%`
-    : '기록을 시작해 보세요'
+  const goalAreas=data.okr[getViewedWeekKey()]?.areas||{},goals=MinishCore.AREAS.map(area=>goalAreas[area]).filter(goal=>goal?.text?.trim())
+  const goalsDone=goals.filter(goal=>goal.done).length,goalPct=goals.length?Math.round(goalsDone/goals.length*100):0
+  document.getElementById('dashboardGoalMetric').textContent=goals.length?`${goalPct}%`:'—'
+  document.getElementById('dashboardGoalMetricDetail').textContent=goals.length?`${goalsDone} / ${goals.length} 달성`:'이번 주 목표 없음'
+  document.getElementById('dashboardRoutineMetric').textContent=total?`${pct}%`:'—'
+  document.getElementById('dashboardRoutineMetricDetail').textContent=total?`${done} / ${total} 완료`:'이번 주 루틴 없음'
 
-  const routineList = document.getElementById('routineReviewList')
+  const routineList = document.getElementById('dashboardRoutineList')
   if (routineStats.length === 0) {
     routineList.innerHTML = '<div class="review-empty">체커보드에 루틴을 추가하면 주간 성과가 표시됩니다.</div>'
   } else {
-    routineList.innerHTML = routineStats.map(item => `
+    const visible=routineStats.slice(0,5)
+    routineList.innerHTML = visible.map(item => `
       <div class="routine-review-item">
         <div class="routine-review-head">
           <span class="routine-review-name">${esc(item.routine.name)}</span>
           <span class="routine-review-score">${item.done}/${item.target} · ${item.pct}%</span>
         </div>
         <div class="routine-review-bar"><span style="width:${item.pct}%"></span></div>
-      </div>`).join('')
+      </div>`).join('')+(routineStats.length>visible.length?`<p class="dashboard-more">외 ${routineStats.length-visible.length}개 루틴</p>`:'')
   }
 
-  const statusTotals = { 1: 0, 2: 0, 3: 0, 4: 0 }
-  routineStats.forEach(item => {
-    Object.keys(statusTotals).forEach(status => {
-      statusTotals[status] += item.statuses[status]
-    })
+  const financeMonth=toDK(dates[3]).slice(0,7),finance=window.MinishFinance?.getDashboardSnapshot(financeMonth)
+  document.getElementById('dashboardFinanceTitle').textContent=`${Number(financeMonth.slice(5))}월 가계부`
+  document.getElementById('dashboardExpenseMetric').textContent=finance?.ready?dashboardMoney(finance.totals.expense):'불러오는 중'
+  document.getElementById('dashboardExpenseMetricDetail').textContent=`${financeMonth.slice(0,4)}년 ${Number(financeMonth.slice(5))}월 지출`
+  const financeTotals=document.getElementById('dashboardFinanceTotals'),financeCategories=document.getElementById('dashboardFinanceCategories')
+  if(finance?.ready){
+    const net=finance.totals.net
+    financeTotals.innerHTML=`<div class="income"><span>수입</span><strong>+ ${dashboardMoney(finance.totals.income)}</strong></div><div class="expense"><span>지출</span><strong>− ${dashboardMoney(finance.totals.expense)}</strong></div><div class="investment"><span>저축·투자</span><strong>* ${dashboardMoney(finance.totals.investment)}</strong></div><div class="net"><span>기록 합계</span><strong>${net<0?'−':'+'} ${dashboardMoney(Math.abs(net))}</strong></div>`
+    const categories=finance.categories.slice(0,3)
+    financeCategories.innerHTML=categories.length?`<h3>지출 상위 카테고리</h3>${categories.map(row=>`<div><span>${esc(row.name)}</span><strong>${dashboardMoney(row.amount)}</strong><i><b style="width:${row.pct}%"></b></i></div>`).join('')}`:'<p class="review-empty">이 달에는 지출 기록이 없어요.</p>'
+  }else{
+    financeTotals.innerHTML='<div class="review-empty">가계부를 불러오는 중입니다.</div>'
+    financeCategories.innerHTML=''
+  }
+
+  const mealStats=MinishCore.mealStats(data.meals,dates.map(toDK))
+  document.getElementById('dashboardMealMetric').textContent=`${mealStats.recorded}끼니`
+  document.getElementById('dashboardMealMetricDetail').textContent=mealStats.recorded?'이번 주 기록':'아직 기록 없음'
+  renderDashboardBreakdown('dashboardMealQuality','식단 상태',mealStats.ratings,mealStats.rated,MEAL_RATINGS)
+  renderDashboardBreakdown('dashboardMealPlaces','먹은 방식',mealStats.places,mealStats.placed,MEAL_PLACES)
+
+  const dailyQuote=dashboardQuoteForToday()
+  document.getElementById('dashboardQuoteEnglish').textContent=dailyQuote.english
+  document.getElementById('dashboardQuoteKorean').textContent=dailyQuote.korean
+  document.getElementById('dashboardQuoteOrigin').textContent=`INSPIRED BY · ${dailyQuote.inspiredBy||'CLASSICAL MEDITATION'}`
+  requestAnimationFrame(()=>{
+    fitSingleLine(document.getElementById('dashboardQuoteEnglish'),15,7)
+    fitSingleLine(document.getElementById('dashboardQuoteKorean'),12,7)
   })
-  const recorded = Object.values(statusTotals).reduce((sum, count) => sum + count, 0)
-  const statusList = document.getElementById('statusReviewList')
-  statusList.innerHTML = [1, 2, 3, 4].map(status => {
-    const share = recorded > 0 ? Math.round(statusTotals[status] / recorded * 100) : 0
-    return `
-      <div class="status-review-item">
-        <span class="status-review-dot ${STATUS[status].cls}"></span>
-        <span class="status-review-label">${STATUS[status].label}</span>
-        <span class="status-review-count">${statusTotals[status]}</span>
-        <div class="status-review-bar"><span class="${STATUS[status].cls}" style="width:${share}%"></span></div>
-      </div>`
-  }).join('')
 
   const comment = data.weeklyReviews[getViewedWeekKey()] || ''
   document.getElementById('weeklyReviewComment').value = comment
@@ -768,19 +788,19 @@ function persistOKR() {
 }
 
 function renderGoalDashboard() {
-  const yearInput=document.getElementById('goalDashboardYear')
-  if(!yearInput.value)yearInput.value=new Date().getFullYear()
-  const year=Number(yearInput.value)
-  if(year<2000||year>2199)return
+  const scopes=document.getElementById('dashboardGoalScopes'),areas=document.getElementById('dashboardGoalAreas')
+  if(!scopes||!areas)return
+  const dates=getWeekDates(weekOffset),weekInfo=getISOWeekInfo(dates[0]),year=weekInfo.year,key=getViewedWeekKey()
   const labels={year:'연간',quarter:'분기',month:'월',week:'주차'}
-  document.getElementById('goalSummary').innerHTML=Object.entries(labels).map(([scope,label])=>{
+  scopes.innerHTML=Object.entries(labels).map(([scope,label])=>{
     const stats=MinishCore.goalStats(data.okr,year,scope)
-    return `<button class="goal-scope-card${scope===goalDashboardScope?' active':''}" data-goal-scope="${scope}"><span>${label} 목표</span><strong>${stats.total?stats.pct+'%':'—'}</strong><small>${stats.done} / ${stats.total} 달성</small></button>`
+    return `<div><span>${label}</span><strong>${stats.total?stats.pct+'%':'—'}</strong><small>${stats.done}/${stats.total}</small></div>`
   }).join('')
-  const stats=MinishCore.goalStats(data.okr,year,goalDashboardScope)
-  document.getElementById('goalAreaSummary').innerHTML=stats.areas.map(a=>`<div><div><strong>${a.area}</strong><span>${a.done}/${a.total}</span></div><div class="routine-review-bar"><span style="width:${a.total?a.done/a.total*100:0}%"></span></div></div>`).join('')
-  const goals=stats.areas.flatMap(a=>a.goals).sort((a,b)=>b.key.localeCompare(a.key)||MinishCore.AREAS.indexOf(a.area)-MinishCore.AREAS.indexOf(b.area))
-  document.getElementById('goalHistory').innerHTML=goals.length?goals.map(g=>`<div class="goal-history-row"><span class="goal-history-check${g.done?' done':''}">${g.done?'✓':'○'}</span><span class="goal-history-period">${esc(g.key)}</span><span class="goal-history-area">${g.area}</span><span>${esc(g.text)}</span></div>`).join(''):'<p class="review-empty">이 기간의 목표를 작성하면 달성 현황이 표시됩니다.</p>'
+  const weekGoals=data.okr[key]?.areas||{}
+  areas.innerHTML=MinishCore.AREAS.map(area=>{
+    const goal=weekGoals[area]||{},written=Boolean(goal.text?.trim())
+    return `<div class="dashboard-goal-row${goal.done&&written?' done':''}"><span>${goal.done&&written?'✓':'○'}</span><strong>${area}</strong><p>${written?esc(goal.text.trim()):'이번 주 목표 없음'}</p></div>`
+  }).join('')
 }
 
 // ─── Grid ────────────────────────────────────────────────────────
@@ -1418,10 +1438,9 @@ function wire() {
 
   document.getElementById('goalAreaFields').addEventListener('input',persistOKR)
   document.getElementById('okrKeyword').addEventListener('input', persistOKR)
-  document.getElementById('goalDashboardYear').addEventListener('change',renderGoalDashboard)
-  document.getElementById('goalSummary').addEventListener('click',event=>{
-    const button=event.target.closest('[data-goal-scope]')
-    if(button){goalDashboardScope=button.dataset.goalScope;renderGoalDashboard()}
+  document.getElementById('reviewView').addEventListener('click',event=>{
+    const button=event.target.closest('[data-dashboard-view]')
+    if(button)document.querySelector(`.view-tab[data-view="${button.dataset.dashboardView}"]`)?.click()
   })
   function moveGoalPeriod(amount) {
     persistOKR()
@@ -1562,6 +1581,7 @@ function wire() {
   })
   window.addEventListener('pagehide', flushPendingEdits)
   window.addEventListener('minish-sync-meta', event => { data._sync = event.detail._sync })
+  window.addEventListener('minish-finance-updated',()=>{if(activeView==='review')renderReview()})
 
   window.addEventListener('minish-data-replaced', event => {
     if (!event.detail || typeof event.detail !== 'object') return
