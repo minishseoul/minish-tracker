@@ -86,11 +86,11 @@
       return {from,to,key:weekKey(start),amount:entries.filter(e=>!e.deleted&&e.type==='expense'&&e.date>=from&&e.date<=to).reduce((n,e)=>n+e.amount,0)}
     })
   }
-  function spendingCategories(entries,categories,month) {
+  function spendingCategories(entries,categories,month,range=null) {
     const groups=new Map()
     let total=0,count=0
     for(const entry of entries) {
-      if(entry.deleted||entry.type!=='expense'||!entry.date.startsWith(`${month}-`))continue
+      if(entry.deleted||entry.type!=='expense'||(range?entry.date<range.from||entry.date>range.to:!entry.date.startsWith(`${month}-`)))continue
       const group=groups.get(entry.categoryId)||{id:entry.categoryId,amount:0,count:0}
       group.amount+=entry.amount;group.count++;total+=entry.amount;count++
       if(!Number.isSafeInteger(total))throw new Error('합계가 지원 범위를 초과했습니다.')

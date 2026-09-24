@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=10">
+  <link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body spellcheck="false" class="web-locked">
 
@@ -130,6 +130,8 @@
         <button class="view-tab" data-view="review">대시보드</button>
         <button class="view-tab" data-view="finance">가계부</button>
         <button class="view-tab" data-view="meal">식단관리</button>
+        <button class="view-tab" data-view="sober">Sober</button>
+        <button class="view-tab" data-view="workout">운동</button>
         <button class="view-tab" data-view="quote">오늘의 문장</button>
       </nav>
 
@@ -251,13 +253,24 @@
         <div class="finance-scroll">
           <div class="finance-filter"><button id="financePrevMonth" class="nav-btn" aria-label="이전 가계부 월">←</button><input type="month" id="financeMonth" aria-label="가계부 월"><button id="financeNextMonth" class="nav-btn" aria-label="다음 가계부 월">→</button><button id="financeCurrentMonth" class="today-btn">이번 달</button><button id="financeAll" class="today-btn">전체 내역</button></div>
           <div class="finance-summary" id="financeSummary"></div>
-          <article class="review-panel finance-chart-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">WEEKLY SPENDING</span><h2>주차별 쓴 돈</h2></div><span class="feature-help">선택 월 마지막 주까지 8주 · 지출(−)만<br>날짜를 누르면 해당 주의 금액을 볼 수 있어요.</span></div><div id="financeChart" class="finance-chart" role="group" aria-label="주차별 지출 그래프"></div></article>
+          <div class="finance-filter"><label for="financeCategoryWeek">카테고리 집계 주차</label><select id="financeCategoryWeek" aria-label="카테고리 지출 집계 주차"></select></div>
+          <article class="review-panel finance-category-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">WEEKLY CATEGORIES</span><h2>주차별 카테고리 지출</h2></div></div><p class="feature-help">아래 그래프에서 주차를 선택하세요. 월을 걸친 주도 월요일부터 일요일까지 집계합니다.</p><div class="category-spending-summary"><div><span id="financeWeekCategoriesRange"></span><strong id="financeWeekCategoriesTotal">0원</strong></div></div><ul id="financeWeekCategories" class="category-spending-list" aria-label="선택 주 카테고리별 지출"></ul></article>
+          <article class="review-panel finance-chart-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">WEEKLY SPENDING</span><h2>주차별 쓴 돈</h2></div><span class="feature-help">이번 달은 이번 주까지 · 다른 달은 마지막 주까지 8주<br>날짜를 누르면 해당 주의 지출과 카테고리를 볼 수 있어요.</span></div><div id="financeChart" class="finance-chart" role="group" aria-label="주차별 지출 그래프"></div></article>
           <article class="review-panel finance-category-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">MONTHLY CATEGORIES</span><h2>카테고리별 쓴 돈</h2></div><span id="financeCategoryMonth" class="feature-help"></span></div><div class="category-spending-summary"><div><span>선택 월 총 지출</span><strong id="financeCategoryTotal">0원</strong></div><span id="financeCategoryCount"></span></div><ul id="financeCategorySpending" class="category-spending-list" aria-label="선택 월 카테고리별 지출"></ul></article>
           <article class="review-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">TRANSACTIONS</span><h2 id="financeListTitle">이번 달 내역</h2></div><button id="financeTrash" class="today-btn">휴지통</button></div><div id="financeList"></div></article>
           <div class="finance-tools"><button id="financeCategories" class="today-btn">카테고리 관리</button><button id="financeSync" class="today-btn">지금 동기화</button><button id="financeExport" class="today-btn">전체 백업</button><button id="financeImport" class="today-btn">백업 불러오기</button><input id="financeImportFile" type="file" accept="application/json,.json" hidden></div>
           <p class="finance-status" id="financeStatus" role="status">가계부 저장소 확인 중…</p>
           <p class="feature-help">합계 = 수입 − 지출 − 저축·투자. 실제 은행 잔액이 아닌, 입력한 기록의 합계입니다.<br>삭제·수정 이력은 보관됩니다. 오프라인 기록은 연결 후 동기화되며, 브라우저 데이터 삭제 전에는 전체 백업을 보관하세요.</p>
         </div>
+      </section>
+
+      <section class="main-view health-view" id="soberView">
+        <div class="meal-toolbar"><div><span class="review-eyebrow">ONE DAY AT A TIME</span><h1 class="review-title">Sober</h1><p class="feature-help">2026.09.23 — 2027.09.22 · 365일 금주 기록</p></div><button class="today-btn" id="soberToday">오늘로 이동</button></div>
+        <div class="health-scroll"><div id="soberSummary" class="dashboard-metrics"></div><p class="feature-help">한 번 누르면 금주 ✓ · 한 번 더 누르면 음주 − · 다시 누르면 미기록<br>빈 동그라미는 미기록입니다. 미래 날짜는 기록할 수 없어요.</p><div id="soberCalendar"></div></div>
+      </section>
+      <section class="main-view health-view" id="workoutView">
+        <div class="meal-toolbar"><div><span class="review-eyebrow">DAILY MOVEMENT</span><h1 class="review-title">운동</h1><p class="feature-help">오늘 움직인 만큼, 한 줄씩 남겨보세요.</p></div><button class="add-btn" id="workoutAdd">+ 한 줄 추가</button></div>
+        <div class="health-scroll"><div class="finance-filter"><button class="nav-btn" id="workoutPrev" aria-label="이전 날짜">←</button><input id="workoutDate" type="date" aria-label="운동 기록 날짜"><button class="nav-btn" id="workoutNext" aria-label="다음 날짜">→</button><button class="today-btn" id="workoutToday">오늘</button></div><p class="feature-help">장소 · 운동 내용 · 횟수(반복 수)를 기록해요. 횟수는 비워도 됩니다.</p><div id="workoutRows"></div><p id="workoutStatus" class="finance-status" role="status">자동 저장</p></div>
       </section>
 
       <section class="main-view meal-view" id="mealView">
@@ -488,9 +501,10 @@
   </div>
 
   <script src="supabase-config.js?v=4"></script>
-  <script src="minish-core.js?v=10"></script>
+  <script src="minish-core.js?v=11"></script>
   <script src="platform.js?v=8"></script>
-  <script src="renderer.js?v=10"></script>
-  <script src="finance.js?v=10"></script>
+  <script src="renderer.js?v=11"></script>
+  <script src="health.js?v=11"></script>
+  <script src="finance.js?v=11"></script>
 </body>
 </html>

@@ -126,6 +126,11 @@
     const week=chartWeeks.find(w=>w.key===key)
     if(!week)return
     selectedSpendingWeek=key
+    $('financeCategoryWeek').value=key
+    const report=C.spendingCategories(state.entries,state.categories,null,week)
+    $('financeWeekCategoriesRange').textContent=`${week.from} – ${week.to} · 월~일`
+    $('financeWeekCategoriesTotal').textContent=money(report.total)
+    $('financeWeekCategories').innerHTML=report.rows.length?report.rows.map(row=>`<li class="category-spending-row"><div class="category-spending-heading"><span class="category-spending-name">${escape(row.name)}</span><strong>${money(row.amount)}</strong></div><div class="category-spending-meta"><span>${row.count}건</span><span>${row.pct.toFixed(1)}%</span></div><div class="category-spending-track"><div style="width:${row.pct}%"></div></div></li>`).join(''):'<li class="review-empty">이 주에는 지출 기록이 없어요.</li>'
     $('financeWeekDetail').textContent=`${week.from} – ${week.to} · ${week.key.split('-')[1]} · ${money(week.amount)}`
     $('financeChart').querySelectorAll('[data-spending-week]').forEach(el=>{
       const active=el.dataset.spendingWeek===key
@@ -135,6 +140,7 @@
   }
   function renderSpendingChart() {
     if(!chartWeeks.length)return
+    $('financeCategoryWeek').innerHTML=chartWeeks.map(w=>`<option value="${w.key}">${w.from} ~ ${w.to}</option>`).join('')
     const width=Math.max(260,$('financeChart').clientWidth),left=58,right=12,top=18,bottom=166
     const peak=Math.max(0,...chartWeeks.map(w=>w.amount))
     const magnitude=peak?10**Math.floor(Math.log10(peak)):10000
@@ -161,7 +167,8 @@
     const sums=C.totals(entries)
     $('financeSummary').innerHTML=['income','expense','investment','net'].map(type=>`<article class="finance-total ${type}"><span>${names[type]||'기록 합계'}</span><strong>${type==='net'?(sums.net<0?'−':'+'):symbols[type]} ${money(Math.abs(sums[type]))}</strong></article>`).join('')
     // Both spending reports follow the selected month, even in the all-records list.
-    const anchor=C.dateKey(new Date(Number(month.slice(0,4)),Number(month.slice(5)),0))
+    const today=C.dateKey(new Date())
+    const anchor=month===today.slice(0,7)?today:C.dateKey(new Date(Number(month.slice(0,4)),Number(month.slice(5)),0))
     chartWeeks=C.spendingWeeks(state.entries,anchor)
     renderSpendingChart()
     renderCategorySpending(month)
@@ -218,6 +225,7 @@
       const target=event.target.closest('[data-spending-week]')
       if(target)selectSpendingWeek(target.dataset.spendingWeek)
     })
+    $('financeCategoryWeek').addEventListener('change',event=>selectSpendingWeek(event.target.value))
     let chartWidth=0
     new ResizeObserver(entries=>{
       const width=entries[0].contentRect.width

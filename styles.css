@@ -2950,6 +2950,29 @@ body {
   .sidebar { order:2; margin-top:10px; }
 }
 
+.view-tabs { max-width:100%; overflow-x:auto; flex-shrink:0; }
+.view-tab { flex-shrink:0; white-space:nowrap; }
+.health-view { flex-direction:column; min-width:0; }
+.finance-filter select { max-width:100%; border:1px solid #d9e5f5; padding:9px; border-radius:9px; color:#254e85; background:#fff; font:inherit; font-size:12px; }
+.health-scroll { overflow-y:auto; min-height:0; padding:0 4px 24px 0; }
+.sober-month { margin-bottom:12px; }
+.sober-month h2 { margin-bottom:12px; }
+.sober-grapes { display:grid; grid-template-columns:repeat(auto-fill,minmax(44px,1fr)); gap:6px; }
+.sober-day { width:44px; height:44px; border:1px solid #cad9ec; border-radius:50%; background:#f5f9ff; color:#647b9b; font:inherit; font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:2px; }
+.sober-day small { font-size:10px; }
+.sober-day.sober-1 { background:linear-gradient(135deg,#6aabff,#337af0); color:#fff; border-color:#337af0; }
+.sober-day.sober-2 { background:#d95363; color:#fff; border-color:#d95363; }
+.sober-day.today { outline:2px solid #254d7d; outline-offset:2px; }
+.sober-day:disabled { opacity:.35; cursor:default; }
+.workout-row { display:grid; grid-template-columns:110px minmax(0,1fr) 90px auto; gap:8px; padding:12px; margin-bottom:8px; border:1px solid #dce7f6; border-radius:12px; background:#fff; }
+.workout-row input,.workout-row select { min-width:0; width:100%; border:1px solid #d8e5f5; border-radius:8px; padding:10px; color:#2d4e78; background:#f8fbff; font:inherit; font-size:12px; }
+@media(max-width:760px) {
+  .health-scroll { overflow:visible; }
+  .workout-row { grid-template-columns:100px minmax(0,1fr) 64px; }
+  .workout-row [data-workout-field="note"] { grid-column:1/-1; grid-row:2; }
+  .workout-row [data-workout-field="count"] { grid-column:2; }
+}
+
 /* Keep taps at the current scale, while retaining scrolling and pinch zoom. */
 html { touch-action: manipulation; }
 
