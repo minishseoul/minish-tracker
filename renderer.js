@@ -314,6 +314,7 @@ function renderReview() {
 
   const financeMonth=toDK(dates[3]).slice(0,7),finance=window.MinishFinance?.getDashboardSnapshot(financeMonth)
   window.MinishFinance?.renderWeeklyDashboard(toDK(dates[0]),data.dashboardExpenseCategories||{})
+  window.MinishFinance?.refreshWeeklyFilters()
   document.getElementById('dashboardFinanceTitle').textContent=`${Number(financeMonth.slice(5))}월 가계부`
   document.getElementById('dashboardExpenseMetric').textContent=finance?.ready?dashboardMoney(finance.totals.expense):'불러오는 중'
   document.getElementById('dashboardExpenseMetricDetail').textContent=`${financeMonth.slice(0,4)}년 ${Number(financeMonth.slice(5))}월 지출`
@@ -1410,7 +1411,7 @@ async function save() {
 // ─── Event Wiring ────────────────────────────────────────────────
 
 function wire() {
-  document.getElementById('dashboardWeeklySpending').addEventListener('change',event=>{
+  for(const id of ['dashboardWeeklySpending','financeExpenseFilters'])document.getElementById(id).addEventListener('change',event=>{
     const input=event.target;if(!input.matches('[data-expense-category]'))return
     data.dashboardExpenseCategories??={};data.dashboardExpenseCategories[input.dataset.expenseCategory]=input.checked
     save();renderReview()
@@ -1599,6 +1600,7 @@ function wire() {
     renderGrid()
     renderDailyQuoteView()
     if (activeView === 'review') renderReview()
+    if (activeView === 'finance') window.MinishFinance?.refreshWeeklyFilters()
     if (activeView === 'meal') renderMealTracker()
     if (activeView === 'sober' || activeView === 'workout') window.MinishHealth?.render(activeView)
   })
