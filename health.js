@@ -27,6 +27,7 @@
   }
   function renderWorkout() {
     if(!$('workoutDate').value)$('workoutDate').value=todayDK()
+    renderWorkoutWeek()
     const rows=Object.entries(data.workouts?.[$('workoutDate').value]||{}).filter(([,row])=>!row.deleted).sort(([a,x],[b,y])=>(x.createdAt||0)-(y.createdAt||0)||a.localeCompare(b))
     $('workoutRows').innerHTML=rows.length?rows.map(([id,row])=>`<div class="workout-row" data-workout-id="${esc(id)}"><select data-workout-field="place" aria-label="운동 장소">${[['home','홈트'],['gym','헬스장'],['outdoor','야외'],['other','기타']].map(([key,label])=>`<option value="${key}" ${row.place===key?'selected':''}>${label}</option>`).join('')}</select><input data-workout-field="note" aria-label="운동 내용" maxlength="240" placeholder="어떤 운동을 했나요?" value="${esc(row.note||'')}"><input data-workout-field="count" aria-label="횟수" type="number" inputmode="numeric" min="0" max="999999" step="1" placeholder="횟수" value="${row.count==null?'':Number(row.count)}"><button class="today-btn" data-workout-delete="${esc(id)}" aria-label="운동 줄 삭제">삭제</button></div>`).join(''):'<p class="review-empty">이 날의 운동 기록이 없어요. 한 줄을 추가해 보세요.</p>'
   }
@@ -55,7 +56,7 @@
       input.setCustomValidity('');value=value===''?null:Number(value)
     }
     const entry=data.workouts?.[$('workoutDate').value]?.[row.dataset.workoutId];if(!entry||entry.deleted)return
-    entry[field]=value;$('workoutStatus').textContent='자동 저장 중…';save().then(()=>{$('workoutStatus').textContent='저장 상태는 상단 동기화 표시에서 확인할 수 있어요.'})
+    entry[field]=value;renderWorkoutWeek();$('workoutStatus').textContent='자동 저장 중…';save().then(()=>{$('workoutStatus').textContent='저장 상태는 상단 동기화 표시에서 확인할 수 있어요.'})
   })
   $('workoutRows').addEventListener('click',event=>{
     const button=event.target.closest('[data-workout-delete]');if(!button)return
@@ -66,5 +67,21 @@
   $('workoutDate').addEventListener('change',()=>{if(!MinishCore.validDate($('workoutDate').value))$('workoutDate').value=todayDK();renderWorkout()})
   for(const [id,offset] of [['workoutPrev',-1],['workoutNext',1]])$(id).addEventListener('click',()=>{const date=new Date(`${$('workoutDate').value||todayDK()}T12:00:00`);date.setDate(date.getDate()+offset);$('workoutDate').value=toDK(date);renderWorkout()})
   $('workoutToday').addEventListener('click',()=>{$('workoutDate').value=todayDK();renderWorkout()})
+  function renderWorkoutWeek() {
+    const week=MinishCore.spendingWeeks([],$('workoutDate').value,1)[0]
+    const days=Array.from({length:7},(_,i)=>{const d=new Date(`${week.from}T12:00:00`);d.setDate(d.getDate()+i);const date=toDK(d);return {date,done:Object.values(data.workouts?.[date]||{}).some(row=>!row.deleted&&String(row.note||'').trim())}})
+    const done=days.filter(day=>day.done).length,target=Number(data.workoutWeeklyTargets?.[week.key])||0,pct=target?Math.min(100,Math.round(done/target*100)):0
+    $('workoutWeekRange').textContent=`${week.from} ~ ${week.to} · 월–일`
+    $('workoutTarget').value=String(target)
+    $('workoutProgress').textContent=target?`${done} / ${target}회 · ${pct}%`:`${done}회 기록 · 목표 미설정`
+    $('workoutProgressNote').textContent=target?(done>=target?'이번 주 목표 달성!':`목표까지 ${target-done}회 남았어요`):'이번 주에 운동할 횟수를 선택해 주세요'
+    $('workoutProgressBar').style.width=`${pct}%`
+    $('workoutDays').innerHTML=days.map((day,i)=>`<span class="${day.done?'done':''}" title="${day.date}">${['월','화','수','목','금','토','일'][i]}<b>${day.done?'✓':'·'}</b></span>`).join('')
+  }
+  $('workoutTarget').addEventListener('change',event=>{
+    const target=Number(event.target.value);if(!Number.isInteger(target)||target<0||target>7)return
+    const week=MinishCore.spendingWeeks([],$('workoutDate').value,1)[0]
+    data.workoutWeeklyTargets??={};data.workoutWeeklyTargets[week.key]=target;save();renderWorkoutWeek()
+  })
   window.MinishHealth={render,soberStats}
 })()

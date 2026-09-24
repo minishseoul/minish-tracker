@@ -2955,6 +2955,21 @@ body {
 .health-view { flex-direction:column; min-width:0; }
 .finance-filter select { max-width:100%; border:1px solid #d9e5f5; padding:9px; border-radius:9px; color:#254e85; background:#fff; font:inherit; font-size:12px; }
 .health-scroll { overflow-y:auto; min-height:0; padding:0 4px 24px 0; }
+.workout-week { margin-bottom:20px; background:linear-gradient(130deg,#fff,#eff6ff); }
+.workout-target-label { display:flex; align-items:center; gap:12px; margin:14px 0; font-size:12px; }
+.workout-target-label select { border:1px solid #bfd3ee; border-radius:8px; padding:8px; background:white; color:#20416f; }
+#workoutProgress { display:block; margin-bottom:10px; font-size:20px; color:#245eb5; }
+.workout-days { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin:14px 0; }
+.workout-days span { text-align:center; padding:8px 0; background:#fff; border:1px solid #dce7f6; border-radius:9px; font-size:11px; color:#61718a; }
+.workout-days b { display:block; margin-top:6px; }
+.workout-days .done { background:#e1eeff; color:#205dc2; border-color:#96baf0; }
+#dashboardWeeklySpending { margin-top:18px; padding-top:16px; border-top:1px solid #e0e9f6; min-width:0; }
+#dashboardWeeklySpending h3 { font-size:13px; }
+.expense-category-filters { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+.expense-category-filters label { display:flex; align-items:center; gap:6px; max-width:100%; border:1px solid #dce7f6; border-radius:8px; padding:7px 9px; font-size:11px; cursor:pointer; }
+.expense-category-filters span { overflow-wrap:anywhere; }
+.expense-category-filters input { accent-color:#3479e8; flex-shrink:0; }
+.weekly-expense-total { color:#245eb5; font-size:13px; font-weight:700; }
 .sober-month { margin-bottom:12px; }
 .sober-month h2 { margin-bottom:12px; }
 .sober-grapes { display:grid; grid-template-columns:repeat(auto-fill,minmax(44px,1fr)); gap:6px; }

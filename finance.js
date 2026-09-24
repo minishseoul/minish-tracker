@@ -17,7 +17,17 @@
     return {ready:true,month,totals:C.totals(monthEntries),categories:C.spendingCategories(state.entries,state.categories,month).rows}
   }
   function notifyDashboard(){window.dispatchEvent(new CustomEvent('minish-finance-updated'))}
-  window.MinishFinance={getDashboardSnapshot:dashboardSnapshot}
+  function renderWeeklyDashboard(anchor,selection={}) {
+    const target=$('dashboardWeeklySpending');if(!ready){target.textContent='';return}
+    const expenses=state.entries.filter(e=>!e.deleted&&e.type==='expense')
+    const ids=[...new Set([...state.categories.filter(c=>!c.deleted).map(c=>c.id),...expenses.map(e=>e.categoryId)])]
+    const filtered=expenses.filter(e=>selection[e.categoryId]!==false),weeks=C.spendingWeeks(filtered,anchor),current=weeks.at(-1)
+    const names=new Map(state.categories.map(c=>[c.id,c.name]))
+    const max=Math.max(1,...weeks.map(w=>w.amount)),x=i=>48+i*42,y=amount=>130-amount/max*102
+    const excluded=ids.filter(id=>selection[id]===false).length
+    target.innerHTML=`<h3>주차별 쓴 돈</h3><p class="feature-help">체크한 카테고리만 그래프에 반영 · 최근 8주</p><div class="expense-category-filters">${ids.map((id,i)=>`<label><input type="checkbox" data-expense-category="${escape(id)}" ${selection[id]===false?'':'checked'}><span>${escape(names.get(id)||'카테고리 없음')}</span></label>`).join('')||'<span class="feature-help">지출 카테고리가 없어요.</span>'}</div><p class="weekly-expense-total" aria-live="polite">선택 주 ${money(current.amount)}${excluded?` · ${excluded}개 카테고리 제외`:''}</p><svg class="spending-line-chart" viewBox="0 0 360 160" role="img" aria-label="선택 카테고리 주간 지출: ${weeks.map(w=>`${w.from} ${money(w.amount)}`).join(', ')}"><line x1="48" y1="130" x2="342" y2="130" class="spending-grid-line"/><text x="2" y="24" class="spending-axis">${Math.max(...weeks.map(w=>w.amount)).toLocaleString('ko-KR')}</text><text x="28" y="133" class="spending-axis">0</text><polyline class="spending-line" points="${weeks.map((w,i)=>`${x(i)},${y(w.amount)}`).join(' ')}"/>${weeks.map((w,i)=>`<circle class="spending-point" cx="${x(i)}" cy="${y(w.amount)}" r="4"><title>${w.from} ~ ${w.to}: ${money(w.amount)}</title></circle><text x="${x(i)}" y="153" text-anchor="middle" class="spending-axis">${w.from.slice(5).replace('-','/')}</text>`).join('')}</svg><p class="feature-help">${current.from} ~ ${current.to} · 원 · 월간 합계와 원본 기록은 바뀌지 않아요.</p>`
+  }
+  window.MinishFinance={getDashboardSnapshot:dashboardSnapshot,renderWeeklyDashboard}
 
   function database() {
     if(dbPromise)return dbPromise

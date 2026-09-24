@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=11">
+  <link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body spellcheck="false" class="web-locked">
 
@@ -222,6 +222,7 @@
               <div class="review-panel-header"><div><span class="review-panel-kicker">MONEY</span><h2 id="dashboardFinanceTitle">이번 달 가계부</h2></div><button class="dashboard-open" type="button" data-dashboard-view="finance">가계부 열기 →</button></div>
               <div class="dashboard-finance-totals" id="dashboardFinanceTotals"></div>
               <div class="dashboard-category-list" id="dashboardFinanceCategories"></div>
+              <div id="dashboardWeeklySpending"></div>
             </article>
 
             <article class="review-panel dashboard-panel dashboard-meals">
@@ -270,7 +271,16 @@
       </section>
       <section class="main-view health-view" id="workoutView">
         <div class="meal-toolbar"><div><span class="review-eyebrow">DAILY MOVEMENT</span><h1 class="review-title">운동</h1><p class="feature-help">오늘 움직인 만큼, 한 줄씩 남겨보세요.</p></div><button class="add-btn" id="workoutAdd">+ 한 줄 추가</button></div>
-        <div class="health-scroll"><div class="finance-filter"><button class="nav-btn" id="workoutPrev" aria-label="이전 날짜">←</button><input id="workoutDate" type="date" aria-label="운동 기록 날짜"><button class="nav-btn" id="workoutNext" aria-label="다음 날짜">→</button><button class="today-btn" id="workoutToday">오늘</button></div><p class="feature-help">장소 · 운동 내용 · 횟수(반복 수)를 기록해요. 횟수는 비워도 됩니다.</p><div id="workoutRows"></div><p id="workoutStatus" class="finance-status" role="status">자동 저장</p></div>
+        <div class="health-scroll">
+          <article class="review-panel workout-week">
+            <span class="review-panel-kicker">WEEKLY MOVEMENT</span><h2>주간 운동 목표</h2>
+            <p id="workoutWeekRange" class="feature-help"></p>
+            <label class="workout-target-label">주간 목표 <select id="workoutTarget"><option value="0">목표 선택</option><option value="1">주 1회</option><option value="2">주 2회</option><option value="3">주 3회</option><option value="4">주 4회</option><option value="5">주 5회</option><option value="6">주 6회</option><option value="7">주 7회</option></select></label>
+            <strong id="workoutProgress" aria-live="polite"></strong><div class="routine-review-bar"><span id="workoutProgressBar"></span></div>
+            <p id="workoutProgressNote" class="feature-help"></p><div id="workoutDays" class="workout-days"></div>
+            <p class="feature-help">운동 내용을 쓴 날을 1회로 계산해요. 같은 날 여러 줄도 1회입니다.</p>
+          </article>
+          <div class="finance-filter"><button class="nav-btn" id="workoutPrev" aria-label="이전 날짜">←</button><input id="workoutDate" type="date" aria-label="운동 기록 날짜"><button class="nav-btn" id="workoutNext" aria-label="다음 날짜">→</button><button class="today-btn" id="workoutToday">오늘</button></div><p class="feature-help">장소 · 운동 내용 · 횟수(반복 수)를 기록해요. 횟수는 비워도 됩니다.</p><div id="workoutRows"></div><p id="workoutStatus" class="finance-status" role="status">자동 저장</p></div>
       </section>
 
       <section class="main-view meal-view" id="mealView">
@@ -501,10 +511,10 @@
   </div>
 
   <script src="supabase-config.js?v=4"></script>
-  <script src="minish-core.js?v=11"></script>
+  <script src="minish-core.js?v=12"></script>
   <script src="platform.js?v=8"></script>
-  <script src="renderer.js?v=11"></script>
-  <script src="health.js?v=11"></script>
-  <script src="finance.js?v=11"></script>
+  <script src="renderer.js?v=12"></script>
+  <script src="health.js?v=12"></script>
+  <script src="finance.js?v=12"></script>
 </body>
 </html>
