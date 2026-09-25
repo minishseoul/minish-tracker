@@ -3035,6 +3035,22 @@ body {
 .workout-card-head [data-workout-field="note"] { grid-column:auto; grid-row:auto; }
 
 /* One typeface across every app surface, including controls and SVG charts. */
+.dictionary-search-box { display:flex; align-items:center; gap:8px; padding:10px 14px; border:1px solid #bed3ee; border-radius:18px; background:white; margin-bottom:10px; }
+.dictionary-search-box input { min-width:0; flex:1; border:0; outline:0; background:transparent; padding:8px; color:#16365d; font-size:18px; }
+#dictionaryView>p { margin:4px 0; }
+.dictionary-result { background:white; border:1px solid #dae5f4; border-radius:16px; padding:18px; margin:12px 0; }
+.dictionary-result-head { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.dictionary-result h2 { font-size:19px; color:#193d70; overflow-wrap:anywhere; }
+.dictionary-match { font-size:10px; color:#637c9e; }
+.dictionary-result ol { margin:14px 0 0; padding-left:22px; }
+.dictionary-result li { padding:8px 0; border-top:1px solid #eef3fa; font-size:13px; color:#284568; overflow-wrap:anywhere; }
+.dictionary-copy { float:right; margin-left:8px; border:0; border-radius:6px; padding:6px 10px; color:#2860aa; background:#eef5ff; cursor:pointer; }
+.dictionary-result-head button { flex-shrink:0; }
+.dictionary-notice { margin:20px 0; color:#6c7e96; font-size:11px; line-height:1.7; }
+.dictionary-notice a { color:#3569b2; }.dictionary-notice p { margin:8px 0; }
+#dictionaryCopyFallback { width:100%; min-height:70px; }
+
+/* One typeface across every app surface, including controls and SVG charts. */
 body, body *, body *::before, body *::after { font-family:var(--font) !important; }
 
 /* Keep taps at the current scale, while retaining scrolling and pinch zoom. */

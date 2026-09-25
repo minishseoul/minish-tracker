@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=14">
+  <link rel="stylesheet" href="styles.css?v=15">
 </head>
 <body spellcheck="false" class="web-locked">
 
@@ -133,6 +133,7 @@
         <button class="view-tab" data-view="sober">Sober</button>
         <button class="view-tab" data-view="workout">운동</button>
         <button class="view-tab" data-view="quote">오늘의 문장</button>
+        <button class="view-tab" data-view="dictionary">사전</button>
       </nav>
 
       <section class="main-view tracker-view active" id="trackerView">
@@ -288,6 +289,15 @@
         </div>
       </section>
 
+      <section class="main-view health-view" id="dictionaryView">
+        <div class="meal-toolbar"><div><h1 class="review-title">사전</h1><p class="feature-help">영어를 입력하면 한국어 뜻이 바로 나옵니다.</p></div></div>
+        <div class="dictionary-search-box"><input id="dictionaryQuery" type="search" autocomplete="off" spellcheck="false" maxlength="120" placeholder="영어 단어나 표현 입력" aria-label="영어 단어나 표현 검색"><button id="dictionaryClear" class="today-btn" aria-label="검색어 지우기">지우기</button></div>
+        <p id="dictionaryStatus" class="feature-help" role="status">입력하면 바로 검색됩니다.</p><p class="feature-help">무료 공개 자료의 여러 한국어 대응어입니다. 오역과 누락이 있을 수 있어요.</p>
+        <p id="dictionaryCopyStatus" class="feature-help" role="status"></p><textarea id="dictionaryCopyFallback" hidden readonly aria-label="직접 복사할 문장"></textarea>
+        <div class="health-scroll"><div id="dictionaryResults"></div><button id="dictionaryMore" class="today-btn" hidden>관련 표현 더 보기</button>
+          <details class="dictionary-notice"><summary>사전 품질과 출처</summary><p>Kengdic 한영 자료에서 영어에 대응하는 한국어 표현을 모았습니다. 문맥별 뜻을 검수한 전문 영한사전은 아닙니다. 관련 표현은 검색어 자체의 뜻과 구분해 주세요. 검색어는 저장하거나 전송하지 않습니다.</p><p>Joe Speigle와 Kengdic 기여자. MPL 2.0. 원본 오탈자 1건 수정과 예시 표현 7개 보완.</p><a href="dictionary/NOTICE.txt" target="_blank" rel="noopener">출처 안내</a> / <a href="dictionary/LICENSE-MPL-2.0.txt" target="_blank" rel="noopener">라이선스</a> / <a href="dictionary/kengdic.tsv" download>원본 데이터</a> / <a href="dictionary/build-dictionary.cjs" download>변환 소스</a> / <a href="dictionary/supplement.json" download>보완 표현</a></details>
+        </div>
+      </section>
       <section class="main-view meal-view" id="mealView">
         <div class="meal-toolbar">
           <div><span class="review-eyebrow">MEAL TRACKER</span><h1 class="review-title">식단관리</h1><p class="feature-help">끼니는 데일리에서 기록하고, 주/월 단위로 흐름을 확인해요.</p></div>
@@ -516,10 +526,12 @@
   </div>
 
   <script src="supabase-config.js?v=4"></script>
-  <script src="minish-core.js?v=14"></script>
+  <script src="minish-core.js?v=15"></script>
   <script src="platform.js?v=9"></script>
-  <script src="renderer.js?v=14"></script>
-  <script src="health.js?v=14"></script>
-  <script src="finance.js?v=14"></script>
+  <script src="renderer.js?v=15"></script>
+  <script src="health.js?v=15"></script>
+  <script src="finance.js?v=15"></script>
+  <script src="dictionary-search.js?v=15"></script>
+  <script src="dictionary.js?v=15"></script>
 </body>
 </html>

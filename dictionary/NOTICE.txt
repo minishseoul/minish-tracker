@@ -1,0 +1,19 @@
+MINISH TRACKER offline dictionary
+
+Source: Kengdic, created by Joe Speigle and maintained by contributors.
+https://github.com/garfieldnate/kengdic
+Downloaded 2026-09-25 from the master branch. The source SHA-256 is embedded in data.js.
+
+The upstream README offers MPL 2.0 or LGPL 2.0 or later. This distribution elects MPL 2.0.
+The original source is distributed as kengdic.tsv. The corresponding transformation source is build-dictionary.cjs.
+Derived dictionary data, transformation source and supplement.json are available under MPL 2.0.
+See LICENSE-MPL-2.0.txt for the complete license.
+
+Modifications: reverse lookup from English glosses, separate comma/semicolon alternatives outside parentheses,
+normalize whitespace and punctuation, remove infinitive prefix 'to', deduplicate identical Korean equivalents,
+and add the seven sample expressions listed in supplement.json. The source typo '공선 변호인' for
+'public defender' is excluded from the derived index and replaced by '국선 변호인'. Original TSV is unchanged.
+
+This is an unreviewed community dataset, not an Oxford, Cambridge or Collins dictionary.
+Korean equivalents are reverse lookup candidates, not exhaustive or guaranteed definitions.
+No AI or remote translation service is used during searches. Search queries are not stored or uploaded.

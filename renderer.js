@@ -1430,6 +1430,7 @@ function wire() {
       if (activeView === 'review') renderReview()
       if (activeView === 'meal') renderMealTracker()
       if (activeView === 'quote') renderDailyQuoteView()
+      if (activeView === 'dictionary') window.MinishDictionary?.open()
       if (activeView === 'sober' || activeView === 'workout') window.MinishHealth?.render(activeView)
     })
   })
