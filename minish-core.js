@@ -223,6 +223,13 @@
     }
     return {recorded,rated,placed,ratings,places}
   }
-  return {stableStringify,AREAS,dateKey,validDate,weekKey,periodKey,migrateGoals,goalStats,validEvent,sortEvents,replay,totals,spendingWeeks,spendingCategories,
+  function workoutSets(row) {return Object.entries(row.sets||{}).filter(([,s])=>!s.deleted).sort(([a,x],[b,y])=>(x.order||0)-(y.order||0)||a.localeCompare(b))}
+  function completedWorkout(row) {return !row.deleted&&!!String(row.note||'').trim()&&(row.schema!==2||workoutSets(row).some(([,s])=>s.done&&Number(s.reps)>0))}
+  function workoutHistory(workouts,name,before) {
+    const key=String(name||'').trim().toLocaleLowerCase()
+    if(!key)return []
+    return Object.entries(workouts||{}).filter(([date])=>date<before).flatMap(([date,rows])=>Object.values(rows).filter(row=>completedWorkout(row)&&String(row.note).trim().toLocaleLowerCase()===key).map(row=>({date,row,sets:workoutSets(row).map(([,s])=>s).filter(s=>s.done&&Number(s.reps)>0)}))).sort((a,b)=>b.date.localeCompare(a.date)||(b.row.createdAt||0)-(a.row.createdAt||0))
+  }
+  return {workoutSets,completedWorkout,workoutHistory,stableStringify,AREAS,dateKey,validDate,weekKey,periodKey,migrateGoals,goalStats,validEvent,sortEvents,replay,totals,spendingWeeks,spendingCategories,
     trackerContent,trackerLeaves,ensureTrackerVersions,changedTrackerPaths,markTrackerChanges,rebaseTrackerChanges,mergeTrackerData,mealStats}
 })

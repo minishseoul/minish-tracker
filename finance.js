@@ -3,7 +3,7 @@
   const C=window.MinishCore, $=id=>document.getElementById(id)
   const money=n=>`${n.toLocaleString('ko-KR')}원`
   const symbols={income:'+',expense:'−',investment:'*'}
-  const names={income:'수입',expense:'지출',investment:'저축·투자'}
+  const names={income:'수입',expense:'지출',investment:'저축/투자'}
   const escape=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))
   const DRAFT='minish-finance:draft:v1'
   let events=[],state={entries:[],categories:[]},dbPromise=null,syncRunning=false,syncTimer=null,ready=false
@@ -25,7 +25,7 @@
     const names=new Map(state.categories.map(c=>[c.id,c.name]))
     const max=Math.max(1,...weeks.map(w=>w.amount)),x=i=>48+i*42,y=amount=>130-amount/max*102
     const excluded=ids.filter(id=>selection[id]===false).length
-    target.innerHTML=`<h3>주차별 쓴 돈</h3><p class="feature-help">체크한 카테고리만 그래프에 반영 · 최근 8주</p><div class="expense-category-filters">${ids.map((id,i)=>`<label><input type="checkbox" data-expense-category="${escape(id)}" ${selection[id]===false?'':'checked'}><span>${escape(names.get(id)||'카테고리 없음')}</span></label>`).join('')||'<span class="feature-help">지출 카테고리가 없어요.</span>'}</div><p class="weekly-expense-total" aria-live="polite">선택 주 ${money(current.amount)}${excluded?` · ${excluded}개 카테고리 제외`:''}</p><svg class="spending-line-chart" viewBox="0 0 360 160" role="img" aria-label="선택 카테고리 주간 지출: ${weeks.map(w=>`${w.from} ${money(w.amount)}`).join(', ')}"><line x1="48" y1="130" x2="342" y2="130" class="spending-grid-line"/><text x="2" y="24" class="spending-axis">${Math.max(...weeks.map(w=>w.amount)).toLocaleString('ko-KR')}</text><text x="28" y="133" class="spending-axis">0</text><polyline class="spending-line" points="${weeks.map((w,i)=>`${x(i)},${y(w.amount)}`).join(' ')}"/>${weeks.map((w,i)=>`<circle class="spending-point" cx="${x(i)}" cy="${y(w.amount)}" r="4"><title>${w.from} ~ ${w.to}: ${money(w.amount)}</title></circle><text x="${x(i)}" y="153" text-anchor="middle" class="spending-axis">${w.from.slice(5).replace('-','/')}</text>`).join('')}</svg><p class="feature-help">${current.from} ~ ${current.to} · 원 · 월간 합계와 원본 기록은 바뀌지 않아요.</p>`
+    target.innerHTML=`<h3>주차별 쓴 돈</h3><p class="feature-help">체크한 카테고리만 그래프에 반영 / 최근 8주</p><div class="expense-category-filters">${ids.map((id,i)=>`<label><input type="checkbox" data-expense-category="${escape(id)}" ${selection[id]===false?'':'checked'}><span>${escape(names.get(id)||'카테고리 없음')}</span></label>`).join('')||'<span class="feature-help">지출 카테고리가 없어요.</span>'}</div><p class="weekly-expense-total" aria-live="polite">선택 주 ${money(current.amount)}${excluded?` / ${excluded}개 카테고리 제외`:''}</p><svg class="spending-line-chart" viewBox="0 0 360 160" role="img" aria-label="선택 카테고리 주간 지출: ${weeks.map(w=>`${w.from} ${money(w.amount)}`).join(', ')}"><line x1="48" y1="130" x2="342" y2="130" class="spending-grid-line"/><text x="2" y="24" class="spending-axis">${Math.max(...weeks.map(w=>w.amount)).toLocaleString('ko-KR')}</text><text x="28" y="133" class="spending-axis">0</text><polyline class="spending-line" points="${weeks.map((w,i)=>`${x(i)},${y(w.amount)}`).join(' ')}"/>${weeks.map((w,i)=>`<circle class="spending-point" cx="${x(i)}" cy="${y(w.amount)}" r="4"><title>${w.from} ~ ${w.to}: ${money(w.amount)}</title></circle><text x="${x(i)}" y="153" text-anchor="middle" class="spending-axis">${w.from.slice(5).replace('-','/')}</text>`).join('')}</svg><p class="feature-help">${current.from} ~ ${current.to} / 원 / 월간 합계와 원본 기록은 바뀌지 않아요.</p>`
   }
   function filteredWeeklyEntries() {return state.entries.filter(entry=>data.dashboardExpenseCategories?.[entry.categoryId]!==false)}
   window.MinishFinance={getDashboardSnapshot:dashboardSnapshot,renderWeeklyDashboard,refreshWeeklyFilters:renderSpendingChart}
@@ -61,7 +61,7 @@
     })
   }
   async function appendLocal(batch) {
-    if(batch.some(e=>!C.validEvent(e)))throw new Error('금액·날짜·기록 내용을 확인해 주세요.')
+    if(batch.some(e=>!C.validEvent(e)))throw new Error('금액/날짜/기록 내용을 확인해 주세요.')
     if(window.api?.financeAppend){const r=await window.api.financeAppend(batch);if(!r.ok)throw new Error(r.error);return}
     const db=await database()
     await new Promise((resolve,reject)=>{
@@ -86,14 +86,14 @@
     if(!ready)throw new Error('가계부 저장소를 먼저 확인해 주세요.')
     await appendLocal([event])
     await reload()
-    status('이 기기에 저장됨 · 클라우드 동기화 대기')
+    status('이 기기에 저장됨 / 클라우드 동기화 대기')
     queueSync()
   }
   function queueSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>sync().catch(()=>{}),800)}
   async function sync() {
     if(syncRunning||!ready)return
-    if(!navigator.onLine){status('오프라인 · 이 기기에 저장됨. 연결되면 자동 동기화합니다.');return}
-    if(!window.minishSync.getSession()){status('이 기기에 저장됨 · 같은 계정으로 로그인하면 가계부도 동기화합니다.');return}
+    if(!navigator.onLine){status('오프라인 / 이 기기에 저장됨. 연결되면 자동 동기화합니다.');return}
+    if(!window.minishSync.getSession()){status('이 기기에 저장됨 / 같은 계정으로 로그인하면 가계부도 동기화합니다.');return}
     syncRunning=true
     try{
       const session=await window.minishSync.readySession()
@@ -102,7 +102,7 @@
       const headers={apikey:config.anonKey,Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json'}
       async function request(url,init={}){
         const response=await fetch(url,{...init,headers:{...headers,...init.headers},signal:AbortSignal.timeout(20000)})
-        if(!response.ok)throw new Error(`가계부 연결 확인 필요 (${response.status}) · 기기 기록은 유지됩니다.`)
+        if(!response.ok)throw new Error(`가계부 연결 확인 필요 (${response.status}) / 기기 기록은 유지됩니다.`)
         return response.status===204?null:response.json()
       }
       status('가계부 동기화 중…')
@@ -128,9 +128,9 @@
       }
       await reload()
       const pending=events.filter(e=>!remote.has(e.id)&&!missingCloud.some(x=>x.id===e.id)).length
-      if(pending){status('새 기록 저장됨 · 동기화 대기');queueSync()}
-      else status(`가계부 동기화 완료 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`)
-    }catch(error){status(error.message||'동기화 실패 · 기기 기록은 유지됩니다.',true);throw error}
+      if(pending){status('새 기록 저장됨 / 동기화 대기');queueSync()}
+      else status(`가계부 동기화 완료 / ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`)
+    }catch(error){status(error.message||'동기화 실패 / 기기 기록은 유지됩니다.',true);throw error}
     finally{syncRunning=false}
   }
   function selectSpendingWeek(key) {
@@ -139,10 +139,10 @@
     selectedSpendingWeek=key
     $('financeCategoryWeek').value=key
     const report=C.spendingCategories(filteredWeeklyEntries(),state.categories,null,week)
-    $('financeWeekCategoriesRange').textContent=`${week.from} – ${week.to} · 월~일 · 선택 카테고리만`
+    $('financeWeekCategoriesRange').textContent=`${week.from} – ${week.to} / 월~일 / 선택 카테고리만`
     $('financeWeekCategoriesTotal').textContent=money(report.total)
     $('financeWeekCategories').innerHTML=report.rows.length?report.rows.map(row=>`<li class="category-spending-row"><div class="category-spending-heading"><span class="category-spending-name">${escape(row.name)}</span><strong>${money(row.amount)}</strong></div><div class="category-spending-meta"><span>${row.count}건</span><span>${row.pct.toFixed(1)}%</span></div><div class="category-spending-track"><div style="width:${row.pct}%"></div></div></li>`).join(''):'<li class="review-empty">이 주에는 지출 기록이 없어요.</li>'
-    $('financeWeekDetail').textContent=`${week.from} – ${week.to} · ${week.key.split('-')[1]} · ${money(week.amount)}`
+    $('financeWeekDetail').textContent=`${week.from} – ${week.to} / ${week.key.split('-')[1]} / ${money(week.amount)}`
     $('financeChart').querySelectorAll('[data-spending-week]').forEach(el=>{
       const active=el.dataset.spendingWeek===key
       el.classList.toggle('selected',active)
@@ -171,9 +171,9 @@
   }
   function renderCategorySpending(month) {
     const report=C.spendingCategories(state.entries,state.categories,month)
-    $('financeCategoryMonth').textContent=`${month.slice(0,4)}년 ${Number(month.slice(5))}월 · 지출(−)만`
+    $('financeCategoryMonth').textContent=`${month.slice(0,4)}년 ${Number(month.slice(5))}월 / 지출(−)만`
     $('financeCategoryTotal').textContent=money(report.total)
-    $('financeCategoryCount').textContent=`${report.rows.length}개 카테고리 · ${report.count}건`
+    $('financeCategoryCount').textContent=`${report.rows.length}개 카테고리 / ${report.count}건`
     $('financeCategorySpending').innerHTML=report.rows.length?report.rows.map(row=>`<li class="category-spending-row"><div class="category-spending-heading"><span class="category-spending-name" title="${escape(row.name)}">${escape(row.name)}</span><strong>${money(row.amount)}</strong></div><div class="category-spending-meta"><span>${row.count}건</span><span>${row.pct.toFixed(1)}%</span></div><div class="category-spending-track" aria-hidden="true"><div style="width:${row.pct}%"></div></div></li>`).join(''):'<li class="review-empty">이 달에는 기록된 지출이 없어요.</li>'
   }
   function render() {
@@ -188,13 +188,13 @@
     renderSpendingChart()
     renderCategorySpending(month)
     const rows=showTrash?state.entries.filter(e=>e.deleted):entries.filter(e=>!e.deleted)
-    $('financeListTitle').textContent=showTrash?'휴지통 · 전체 기간':showAll?'전체 내역':`${month} 내역`
+    $('financeListTitle').textContent=showTrash?'휴지통 / 전체 기간':showAll?'전체 내역':`${month} 내역`
     $('financeTrash').textContent=showTrash?'기록으로 돌아가기':'휴지통'
     $('financeAll').classList.toggle('active',showAll)
     $('financeList').innerHTML=rows.length?rows.map(entry=>{
       const category=state.categories.find(c=>c.id===entry.categoryId)?.name||'카테고리 없음'
       const controls=showTrash?`<button data-restore="${entry.id}">복원</button>`:`<button data-edit="${entry.id}">수정</button><button data-delete="${entry.id}">삭제</button>`
-      return `<div class="finance-row"><span class="finance-symbol ${entry.type}">${symbols[entry.type]}</span><div class="finance-description"><strong>${escape(entry.note)}</strong><small>${escape(entry.date)} · ${escape(category)}</small></div><strong class="finance-value ${entry.type}">${symbols[entry.type]} ${money(entry.amount)}</strong><div class="finance-row-actions">${controls}</div></div>`
+      return `<div class="finance-row"><span class="finance-symbol ${entry.type}">${symbols[entry.type]}</span><div class="finance-description"><strong>${escape(entry.note)}</strong><small>${escape(entry.date)} / ${escape(category)}</small></div><strong class="finance-value ${entry.type}">${symbols[entry.type]} ${money(entry.amount)}</strong><div class="finance-row-actions">${controls}</div></div>`
     }).join(''):`<div class="review-empty">${showTrash?'휴지통이 비어 있어요.':'아직 기록이 없어요. 만들기를 눌러 첫 내역을 남겨보세요.'}</div>`
     notifyDashboard()
   }
@@ -211,7 +211,7 @@
     const value=entry||draft
     $('financeFormTitle').textContent=entry?'기록 수정':'기록 만들기'
     $('financeDate').value=value.date||C.dateKey(new Date());$('financeNote').value=value.note||'';$('financeAmount').value=value.amount?Number(value.amount).toLocaleString('ko-KR'):''
-    $('financeNewCategory').value='';$('financeFormMessage').textContent=entry?'수정 전 기록도 이력에 보관합니다.':'먼저 + 수입, − 지출, * 저축·투자를 선택하세요.'
+    $('financeNewCategory').value='';$('financeFormMessage').textContent=entry?'수정 전 기록도 이력에 보관합니다.':'먼저 + 수입, − 지출, * 저축/투자를 선택하세요.'
     renderCategories(value.categoryId||'');$('financeForm').hidden=!selectedType
     document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('active',b.dataset.type===selectedType))
     $('financeOverlay').classList.add('visible')
@@ -234,7 +234,7 @@
   }
   async function init() {
     $('financeMonth').value=C.dateKey(new Date()).slice(0,7)
-    try{await reload();ready=true;notifyDashboard();status('이 기기에 저장됨 · 가계부 연결 확인 중…');queueSync()}
+    try{await reload();ready=true;notifyDashboard();status('이 기기에 저장됨 / 가계부 연결 확인 중…');queueSync()}
     catch(error){status(error.message,true);$('financeCreate').disabled=true}
     $('financeChart').addEventListener('click',event=>{
       const target=event.target.closest('[data-spending-week]')
@@ -266,10 +266,10 @@
       if(!/^\d+$/.test(raw)||!state.categories.some(c=>c.id===value.categoryId)){$('financeFormMessage').textContent='카테고리를 선택하고 원 단위의 양수 금액을 입력해 주세요.';return}
       if(editId&&state.entries.find(e=>e.id===editId)?.eventId!==editEventId){$('financeFormMessage').textContent='다른 기기에서 수정되었습니다. 창을 닫고 최신 기록을 다시 열어 주세요.';return}
       pendingEvent=pendingEvent||makeEvent('entry',editId||newEntryId,'put',value)
-      if(!C.validEvent(pendingEvent)){$('financeFormMessage').textContent='날짜·내용·금액(1원 이상)을 확인해 주세요.';pendingEvent=null;return}
+      if(!C.validEvent(pendingEvent)){$('financeFormMessage').textContent='날짜/내용/금액(1원 이상)을 확인해 주세요.';pendingEvent=null;return}
       button.disabled=true;$('financeFormMessage').textContent='기기에 안전하게 저장 중…'
       try{await commit(pendingEvent);if(!editId)localStorage.removeItem(DRAFT);pendingEvent=null;$('financeOverlay').classList.remove('visible');navigator.storage?.persist?.().catch(()=>{})}
-      catch(error){$('financeFormMessage').textContent=`저장되지 않았습니다 · ${error.message}. 입력 내용은 유지됩니다.`}finally{button.disabled=false}
+      catch(error){$('financeFormMessage').textContent=`저장되지 않았습니다 / ${error.message}. 입력 내용은 유지됩니다.`}finally{button.disabled=false}
     })
     $('financeMonth').addEventListener('change',()=>{if(!/^\d{4}-\d{2}$/.test($('financeMonth').value))return;showAll=false;render()})
     function moveMonth(offset){const [y,m]=$('financeMonth').value.split('-').map(Number);$('financeMonth').value=C.dateKey(new Date(y,m-1+offset,1)).slice(0,7);showAll=false;render()}

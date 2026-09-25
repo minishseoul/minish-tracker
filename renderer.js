@@ -94,9 +94,9 @@ function getViewedWeekKey() {
 function formatWeekRange(dates) {
   const fmt = d => `${d.getMonth()+1}월 ${d.getDate()}일`
   if (dates[0].getMonth() === dates[6].getMonth()) {
-    return `${dates[0].getMonth()+1}월 ${dates[0].getDate()}일 — ${dates[6].getDate()}일`
+    return `${dates[0].getMonth()+1}월 ${dates[0].getDate()}일 - ${dates[6].getDate()}일`
   }
-  return `${fmt(dates[0])} — ${fmt(dates[6])}`
+  return `${fmt(dates[0])} - ${fmt(dates[6])}`
 }
 
 function getOKRKey(period) {
@@ -162,7 +162,7 @@ function formatEndDate(value) {
 
 function formatDaysList(days) {
   if (!days || days.length === 7) return null
-  return [...days].sort((a, b) => a - b).map(d => DAY_LABELS[d]).join(' · ')
+  return [...days].sort((a, b) => a - b).map(d => DAY_LABELS[d]).join(' / ')
 }
 
 function getWeeklyTarget(routine, weekKey = getViewedWeekKey()) {
@@ -188,11 +188,11 @@ function getRoutineMetaLabel(routine, dates) {
   if (target) {
     const effectiveTarget = Math.min(target, getRoutineEligibleDates(routine, dates).length)
     const done = Math.min(getRoutineWeekDone(routine, dates), effectiveTarget)
-    if (effectiveTarget > 0) parts.push(`주 ${effectiveTarget}회 · ${done}/${effectiveTarget}`)
+    if (effectiveTarget > 0) parts.push(`주 ${effectiveTarget}회 / ${done}/${effectiveTarget}`)
   }
   if (days) parts.push(days)
   if (endDate) parts.push(endDate)
-  return parts.join('  ·  ')
+  return parts.join('  /  ')
 }
 
 // ─── Weekly Stats ─────────────────────────────────────────────
@@ -272,7 +272,7 @@ function dashboardQuoteForToday() {
 function renderDashboardBreakdown(target,title,counts,total,options) {
   document.getElementById(target).innerHTML=`<div class="dashboard-breakdown-title"><strong>${title}</strong><span>${total?`${total}끼니 기준`:'선택 기록 없음'}</span></div><div class="dashboard-breakdown-list">${options.map(option=>{
     const count=counts[option.key]||0,pct=total?Math.round(count/total*100):0
-    return `<div class="dashboard-breakdown-row"><span>${option.emoji} ${option.label}</span><strong>${count} · ${pct}%</strong><i><b style="width:${pct}%"></b></i></div>`
+    return `<div class="dashboard-breakdown-row"><span>${option.emoji} ${option.label}</span><strong>${count} / ${pct}%</strong><i><b style="width:${pct}%"></b></i></div>`
   }).join('')}</div>`
 }
 
@@ -287,14 +287,14 @@ function renderReview() {
   const pct = total > 0 ? Math.round(done / total * 100) : 0
 
   document.getElementById('reviewWeekTitle').textContent = `${weekInfo.year}년 ${weekInfo.week}주차 대시보드`
-  document.getElementById('reviewWeekRange').textContent = `${formatWeekRange(dates)} · 목표부터 돈과 식사까지 한눈에`
+  document.getElementById('reviewWeekRange').textContent = `${formatWeekRange(dates)} / 목표부터 돈과 식사까지 한눈에`
   renderGoalDashboard()
 
   const goalAreas=data.okr[getViewedWeekKey()]?.areas||{},goals=MinishCore.AREAS.map(area=>goalAreas[area]).filter(goal=>goal?.text?.trim())
   const goalsDone=goals.filter(goal=>goal.done).length,goalPct=goals.length?Math.round(goalsDone/goals.length*100):0
-  document.getElementById('dashboardGoalMetric').textContent=goals.length?`${goalPct}%`:'—'
+  document.getElementById('dashboardGoalMetric').textContent=goals.length?`${goalPct}%`:'-'
   document.getElementById('dashboardGoalMetricDetail').textContent=goals.length?`${goalsDone} / ${goals.length} 달성`:'이번 주 목표 없음'
-  document.getElementById('dashboardRoutineMetric').textContent=total?`${pct}%`:'—'
+  document.getElementById('dashboardRoutineMetric').textContent=total?`${pct}%`:'-'
   document.getElementById('dashboardRoutineMetricDetail').textContent=total?`${done} / ${total} 완료`:'이번 주 루틴 없음'
 
   const routineList = document.getElementById('dashboardRoutineList')
@@ -306,7 +306,7 @@ function renderReview() {
       <div class="routine-review-item">
         <div class="routine-review-head">
           <span class="routine-review-name">${esc(item.routine.name)}</span>
-          <span class="routine-review-score">${item.done}/${item.target} · ${item.pct}%</span>
+          <span class="routine-review-score">${item.done}/${item.target} / ${item.pct}%</span>
         </div>
         <div class="routine-review-bar"><span style="width:${item.pct}%"></span></div>
       </div>`).join('')+(routineStats.length>visible.length?`<p class="dashboard-more">외 ${routineStats.length-visible.length}개 루틴</p>`:'')
@@ -321,7 +321,7 @@ function renderReview() {
   const financeTotals=document.getElementById('dashboardFinanceTotals'),financeCategories=document.getElementById('dashboardFinanceCategories')
   if(finance?.ready){
     const net=finance.totals.net
-    financeTotals.innerHTML=`<div class="income"><span>수입</span><strong>+ ${dashboardMoney(finance.totals.income)}</strong></div><div class="expense"><span>지출</span><strong>− ${dashboardMoney(finance.totals.expense)}</strong></div><div class="investment"><span>저축·투자</span><strong>* ${dashboardMoney(finance.totals.investment)}</strong></div><div class="net"><span>기록 합계</span><strong>${net<0?'−':'+'} ${dashboardMoney(Math.abs(net))}</strong></div>`
+    financeTotals.innerHTML=`<div class="income"><span>수입</span><strong>+ ${dashboardMoney(finance.totals.income)}</strong></div><div class="expense"><span>지출</span><strong>− ${dashboardMoney(finance.totals.expense)}</strong></div><div class="investment"><span>저축/투자</span><strong>* ${dashboardMoney(finance.totals.investment)}</strong></div><div class="net"><span>기록 합계</span><strong>${net<0?'−':'+'} ${dashboardMoney(Math.abs(net))}</strong></div>`
     const categories=finance.categories.slice(0,3)
     financeCategories.innerHTML=categories.length?`<h3>지출 상위 카테고리</h3>${categories.map(row=>`<div><span>${esc(row.name)}</span><strong>${dashboardMoney(row.amount)}</strong><i><b style="width:${row.pct}%"></b></i></div>`).join('')}`:'<p class="review-empty">이 달에는 지출 기록이 없어요.</p>'
   }else{
@@ -338,7 +338,7 @@ function renderReview() {
   const dailyQuote=dashboardQuoteForToday()
   document.getElementById('dashboardQuoteEnglish').textContent=dailyQuote.english
   document.getElementById('dashboardQuoteKorean').textContent=dailyQuote.korean
-  document.getElementById('dashboardQuoteOrigin').textContent=`INSPIRED BY · ${dailyQuote.inspiredBy||'CLASSICAL MEDITATION'}`
+  document.getElementById('dashboardQuoteOrigin').textContent=`INSPIRED BY / ${dailyQuote.inspiredBy||'CLASSICAL MEDITATION'}`
   requestAnimationFrame(()=>{
     fitSingleLine(document.getElementById('dashboardQuoteEnglish'),15,7)
     fitSingleLine(document.getElementById('dashboardQuoteKorean'),12,7)
@@ -412,7 +412,7 @@ function mealPeriodDates() {
   return [new Date(mealDate)]
 }
 function mealPeriodLabel() {
-  if(mealViewMode==='daily')return `${mealDate.getFullYear()}년 ${mealDate.getMonth()+1}월 ${mealDate.getDate()}일 · ${DAY_KO[mealDate.getDay()]}요일`
+  if(mealViewMode==='daily')return `${mealDate.getFullYear()}년 ${mealDate.getMonth()+1}월 ${mealDate.getDate()}일 / ${DAY_KO[mealDate.getDay()]}요일`
   if(mealViewMode==='weekly')return formatWeekRange(mealWeekDates())
   return `${mealDate.getFullYear()}년 ${mealDate.getMonth()+1}월`
 }
@@ -437,17 +437,17 @@ function renderMealDaily() {
 function renderMealBreakdown(title,counts,total,options) {
   return `<article class="meal-breakdown"><div class="meal-breakdown-head"><h3>${title}</h3><span>${total}끼니 기준</span></div>${options.map(option=>{
     const count=counts[option.key]||0,pct=total?Math.round(count/total*100):0
-    return `<div class="meal-breakdown-row"><span>${option.emoji} ${option.label}</span><strong>${count} · ${pct}%</strong><div><i style="width:${pct}%"></i></div></div>`
+    return `<div class="meal-breakdown-row"><span>${option.emoji} ${option.label}</span><strong>${count} / ${pct}%</strong><div><i style="width:${pct}%"></i></div></div>`
   }).join('')}</article>`
 }
 function renderMealInsights(dates) {
   const stats=MinishCore.mealStats(data.meals,dates.map(toDK))
-  return `<div class="meal-insights"><div class="meal-insight-total"><span>기록한 식사</span><strong>${stats.recorded}<small>끼니</small></strong></div>${renderMealBreakdown('식단 상태',stats.ratings,stats.rated,MEAL_RATINGS)}${renderMealBreakdown('집밥 · 외식 · 배달',stats.places,stats.placed,MEAL_PLACES)}</div>`
+  return `<div class="meal-insights"><div class="meal-insight-total"><span>기록한 식사</span><strong>${stats.recorded}<small>끼니</small></strong></div>${renderMealBreakdown('식단 상태',stats.ratings,stats.rated,MEAL_RATINGS)}${renderMealBreakdown('집밥 / 외식 / 배달',stats.places,stats.placed,MEAL_PLACES)}</div>`
 }
 function mealSummary(entry) {
-  if(!mealExists(entry))return '<span class="meal-empty-mark">—</span>'
+  if(!mealExists(entry))return '<span class="meal-empty-mark">-</span>'
   const rating=MEAL_RATINGS.find(item=>item.key===entry.rating),place=MEAL_PLACES.find(item=>item.key===entry.place)
-  return `<span class="meal-summary-icons">${rating?.emoji||'·'}${place?.emoji||''}</span><span class="meal-summary-dish">${esc(entry.dish||'메뉴 미입력')}</span>`
+  return `<span class="meal-summary-icons">${rating?.emoji||'/'}${place?.emoji||''}</span><span class="meal-summary-dish">${esc(entry.dish||'메뉴 미입력')}</span>`
 }
 function renderMealWeekly() {
   const dates=mealWeekDates()
@@ -536,10 +536,10 @@ function wireMealTracker() {
 
 // ─── Daily Sentence ────────────────────────────────────────────
 
-const MEDITATIONS = 'Marcus Aurelius · Meditations'
-const LETTERS = 'Seneca · Moral Letters'
-const DISCOURSES = 'Epictetus · Discourses'
-const TUSCULAN = 'Cicero · Tusculan Disputations'
+const MEDITATIONS = 'Marcus Aurelius / Meditations'
+const LETTERS = 'Seneca / Moral Letters'
+const DISCOURSES = 'Epictetus / Discourses'
+const TUSCULAN = 'Cicero / Tusculan Disputations'
 const quote = (english, korean, inspiredBy) => ({ english, korean, inspiredBy })
 
 const FALLBACK_QUOTES = [
@@ -622,7 +622,7 @@ function renderDailyQuote(quote) {
   const content = document.getElementById('quoteContent')
   if (!quote?.english || !quote?.korean) {
     content.innerHTML = '<p class="quote-placeholder">버튼을 눌러 오늘 아침의 문장을 만나보세요.</p>'
-    document.getElementById('quoteOrigin').textContent = 'GREEK · ROMAN STOICISM'
+    document.getElementById('quoteOrigin').textContent = 'GREEK / ROMAN STOICISM'
     return
   }
 
@@ -631,7 +631,7 @@ function renderDailyQuote(quote) {
     <span class="quote-divider"></span>
     <p class="quote-korean">${esc(quote.korean)}</p>`
   document.getElementById('quoteOrigin').textContent =
-    `MINISH ARCHIVE · INSPIRED BY · ${quote.inspiredBy || 'CLASSICAL MEDITATION'}`
+    `MINISH ARCHIVE / INSPIRED BY / ${quote.inspiredBy || 'CLASSICAL MEDITATION'}`
   requestAnimationFrame(fitQuoteLines)
 }
 
@@ -684,7 +684,7 @@ function generateQuote() {
 
   setTimeout(() => {
     rememberQuote(selectFallbackQuote())
-    state.textContent = `오프라인 문장 ${FALLBACK_QUOTES.length}개 · 최근 문장은 반복하지 않아요`
+    state.textContent = `오프라인 문장 ${FALLBACK_QUOTES.length}개 / 최근 문장은 반복하지 않아요`
     card.classList.remove('is-switching')
     button.disabled = false
     document.getElementById('quoteGenerateLabel').textContent = '다른 문장 보기'
@@ -796,7 +796,7 @@ function renderGoalDashboard() {
   const labels={year:'연간',quarter:'분기',month:'월',week:'주차'}
   scopes.innerHTML=Object.entries(labels).map(([scope,label])=>{
     const stats=MinishCore.goalStats(data.okr,year,scope)
-    return `<div><span>${label}</span><strong>${stats.total?stats.pct+'%':'—'}</strong><small>${stats.done}/${stats.total}</small></div>`
+    return `<div><span>${label}</span><strong>${stats.total?stats.pct+'%':'-'}</strong><small>${stats.done}/${stats.total}</small></div>`
   }).join('')
   const weekGoals=data.okr[key]?.areas||{}
   areas.innerHTML=MinishCore.AREAS.map(area=>{
@@ -886,7 +886,7 @@ function buildRow(routine, idx, dates) {
         <span class="name-text" data-idx="${idx}">${esc(routine.name)}</span>
         ${metaLabel ? `<span class="name-days${goalReached ? ' goal-complete' : ''}">${metaLabel}</span>` : ''}
       </div>
-      <button class="days-btn" data-idx="${idx}" title="주간 목표·요일·유지 기간 설정">
+      <button class="days-btn" data-idx="${idx}" title="주간 목표/요일/유지 기간 설정">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
           <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
@@ -910,10 +910,10 @@ function buildRow(routine, idx, dates) {
     const btn = document.createElement('button')
     if (!isActive && status === 0) {
       btn.className = 'status-btn expired'
-      btn.title     = `${formatEndDate(routine.endDate)} · 기간 종료`
+      btn.title     = `${formatEndDate(routine.endDate)} / 기간 종료`
     } else if (!isActive && status > 0) {
       btn.className = `status-btn ${STATUS[status].cls} expired-recorded`
-      btn.title     = `기간 종료 후 기록 · ${STATUS[status].label}`
+      btn.title     = `기간 종료 후 기록 / ${STATUS[status].label}`
     } else if (goalLocked) {
       btn.className = 'status-btn goal-locked'
       btn.title     = `주 ${effectiveTarget}회 목표 달성`
@@ -922,7 +922,7 @@ function buildRow(routine, idx, dates) {
       btn.title     = '휴식일'
     } else if (!isTarget && status > 0) {
       btn.className = `status-btn ${STATUS[status].cls} rest-recorded`
-      btn.title     = `휴식일 · ${STATUS[status].label}`
+      btn.title     = `휴식일 / ${STATUS[status].label}`
     } else {
       btn.className = `status-btn ${STATUS[status].cls}`
       btn.title     = STATUS[status].label
@@ -1499,7 +1499,7 @@ function wire() {
       return
     }
 
-    // Status cycle — skip non-target (rest) days
+    // Status cycle - skip non-target (rest) days
     const btn = e.target.closest('.status-btn')
     if (btn &&
         !btn.classList.contains('rest') &&

@@ -162,9 +162,9 @@
   function dispatchStatus() {
     const session = getSession()
     if (!isConfigReady()) emitStatus('local', 'Supabase 프로젝트 연결 정보가 필요합니다.')
-    else if (!session) emitStatus('ready', '프로젝트 연결됨 · 로그인하면 기기 간 동기화됩니다.')
-    else if (!navigator.onLine) emitStatus('offline', '오프라인 저장 중 · 연결되면 자동 동기화됩니다.')
-    else emitStatus('connected', `${session.user?.email || '계정'} · 자동 동기화 켜짐`)
+    else if (!session) emitStatus('ready', '프로젝트 연결됨 / 로그인하면 기기 간 동기화됩니다.')
+    else if (!navigator.onLine) emitStatus('offline', '오프라인 저장 중 / 연결되면 자동 동기화됩니다.')
+    else emitStatus('connected', `${session.user?.email || '계정'} / 자동 동기화 켜짐`)
   }
 
   function authHeaders(accessToken) {
@@ -388,19 +388,19 @@
         const remoteIsCurrent = contentOf(merged) === contentOf(remoteData) && remoteData._sync?.mergeSchema === 1
         if (remoteIsCurrent) {
           await markSynced(merged, remote.revision, contentOf(localData) !== contentOf(merged))
-          emitStatus('connected', `클라우드 최신 기록 적용 · ${new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' })}`)
+          emitStatus('connected', `클라우드 최신 기록 적용 / ${new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' })}`)
           return merged
         }
         const pushed = await pushCloud(session, merged, remote.revision)
         if (!pushed) continue
         await markSynced(merged, pushed.revision, contentOf(localData) !== contentOf(merged))
-        emitStatus('connected', `클라우드 자동 저장 완료 · ${new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' })}`)
+        emitStatus('connected', `클라우드 자동 저장 완료 / ${new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' })}`)
         return merged
       }
       throw new Error('동시에 변경된 내용을 자동 병합하는 중입니다. 잠시 후 다시 시도합니다.')
     } catch (error) {
       console.error('Supabase sync failed:', error)
-      emitStatus('error', `동기화 실패 · ${error.message}`)
+      emitStatus('error', `동기화 실패 / ${error.message}`)
       throw error
     } finally {
       syncRunning = false
@@ -520,7 +520,7 @@
         )
         document.getElementById('syncPassword').value = ''
       } catch (error) {
-        emitStatus('error', `로그인 실패 · ${error.message}`)
+        emitStatus('error', `로그인 실패 / ${error.message}`)
       }
     })
     document.getElementById('syncSignup').addEventListener('click', async () => {
@@ -531,7 +531,7 @@
         )
         document.getElementById('syncPassword').value = ''
       } catch (error) {
-        emitStatus('error', `계정 생성 실패 · ${error.message}`)
+        emitStatus('error', `계정 생성 실패 / ${error.message}`)
       }
     })
     document.getElementById('syncLogout').addEventListener('click', logout)
@@ -572,7 +572,7 @@
         document.getElementById('privatePassword').value = ''
       } catch (error) {
         setSession(null)
-        updatePrivateGate(`접속 실패 · ${error.message}`)
+        updatePrivateGate(`접속 실패 / ${error.message}`)
       } finally {
         button.disabled = false
       }
@@ -586,7 +586,7 @@
         await sendMagicLink(document.getElementById('privateEmail').value.trim())
         message.textContent = '로그인 링크를 보냈습니다. 메일에서 링크를 열어 주세요.'
       } catch (error) {
-        message.textContent = `전송 실패 · ${error.message}`
+        message.textContent = `전송 실패 / ${error.message}`
       } finally {
         button.disabled = false
       }
@@ -611,7 +611,7 @@
         document.getElementById('privateNewPassword').value = ''
         document.getElementById('privateNewPasswordConfirm').value = ''
       } catch (error) {
-        message.textContent = `저장 실패 · ${error.message}`
+        message.textContent = `저장 실패 / ${error.message}`
       } finally {
         button.disabled = false
       }

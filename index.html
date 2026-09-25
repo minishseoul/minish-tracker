@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=13">
+  <link rel="stylesheet" href="styles.css?v=14">
 </head>
 <body spellcheck="false" class="web-locked">
 
@@ -180,7 +180,7 @@
             <div class="legend-item"><span class="legend-dot s4"></span>미달성</div>
             <div class="legend-item"><span class="legend-dot s0"></span>기록 없음</div>
           </div>
-          <span class="legend-hint">클릭 · 상태 변경 &nbsp;&nbsp; 우클릭 · 빠른 선택</span>
+          <span class="legend-hint">클릭 / 상태 변경 &nbsp;&nbsp; 우클릭 / 빠른 선택</span>
         </div>
       </section>
 
@@ -200,10 +200,10 @@
 
         <div class="review-scroll dashboard-scroll">
           <div class="dashboard-metrics" aria-label="핵심 현황">
-            <article class="dashboard-metric primary"><span>주간 목표</span><strong id="dashboardGoalMetric">—</strong><small id="dashboardGoalMetricDetail">작성한 목표 기준</small></article>
+            <article class="dashboard-metric primary"><span>주간 목표</span><strong id="dashboardGoalMetric">-</strong><small id="dashboardGoalMetricDetail">작성한 목표 기준</small></article>
             <article class="dashboard-metric"><span>주간 루틴</span><strong id="dashboardRoutineMetric">0%</strong><small id="dashboardRoutineMetricDetail">0 / 0 완료</small></article>
             <article class="dashboard-metric expense"><span>월간 지출</span><strong id="dashboardExpenseMetric">0원</strong><small id="dashboardExpenseMetricDetail">이번 달</small></article>
-            <article class="dashboard-metric meal"><span>주간 식사 기록</span><strong id="dashboardMealMetric">0끼니</strong><small id="dashboardMealMetricDetail">건강·장소 분석</small></article>
+            <article class="dashboard-metric meal"><span>주간 식사 기록</span><strong id="dashboardMealMetric">0끼니</strong><small id="dashboardMealMetricDetail">건강/장소 분석</small></article>
           </div>
 
           <div class="dashboard-grid">
@@ -256,21 +256,21 @@
           <div class="finance-summary" id="financeSummary"></div>
           <div class="finance-filter"><label for="financeCategoryWeek">카테고리 집계 주차</label><select id="financeCategoryWeek" aria-label="카테고리 지출 집계 주차"></select></div>
           <article class="review-panel finance-category-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">WEEKLY CATEGORIES</span><h2>주차별 카테고리 지출</h2></div></div><p class="feature-help">아래 그래프에서 주차를 선택하세요. 월을 걸친 주도 월요일부터 일요일까지 집계합니다.</p><div class="category-spending-summary"><div><span id="financeWeekCategoriesRange"></span><strong id="financeWeekCategoriesTotal">0원</strong></div></div><ul id="financeWeekCategories" class="category-spending-list" aria-label="선택 주 카테고리별 지출"></ul></article>
-          <article class="review-panel finance-chart-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">WEEKLY SPENDING</span><h2>주차별 쓴 돈</h2></div><span class="feature-help">이번 달은 이번 주까지 · 다른 달은 마지막 주까지 8주<br>날짜를 누르면 해당 주의 지출과 카테고리를 볼 수 있어요.</span></div><p class="feature-help">체크한 카테고리만 그래프·주간 합계에 반영해요. 대시보드와 선택을 공유하며 월간 합계·원본 기록은 유지됩니다.</p><div id="financeExpenseFilters" class="expense-category-filters" aria-label="주간 지출 카테고리 선택"></div><div id="financeChart" class="finance-chart" role="group" aria-label="주차별 지출 그래프"></div></article>
+          <article class="review-panel finance-chart-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">WEEKLY SPENDING</span><h2>주차별 쓴 돈</h2></div><span class="feature-help">이번 달은 이번 주까지 / 다른 달은 마지막 주까지 8주<br>날짜를 누르면 해당 주의 지출과 카테고리를 볼 수 있어요.</span></div><p class="feature-help">체크한 카테고리만 그래프/주간 합계에 반영해요. 대시보드와 선택을 공유하며 월간 합계/원본 기록은 유지됩니다.</p><div id="financeExpenseFilters" class="expense-category-filters" aria-label="주간 지출 카테고리 선택"></div><div id="financeChart" class="finance-chart" role="group" aria-label="주차별 지출 그래프"></div></article>
           <article class="review-panel finance-category-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">MONTHLY CATEGORIES</span><h2>카테고리별 쓴 돈</h2></div><span id="financeCategoryMonth" class="feature-help"></span></div><div class="category-spending-summary"><div><span>선택 월 총 지출</span><strong id="financeCategoryTotal">0원</strong></div><span id="financeCategoryCount"></span></div><ul id="financeCategorySpending" class="category-spending-list" aria-label="선택 월 카테고리별 지출"></ul></article>
           <article class="review-panel"><div class="review-panel-header"><div><span class="review-panel-kicker">TRANSACTIONS</span><h2 id="financeListTitle">이번 달 내역</h2></div><button id="financeTrash" class="today-btn">휴지통</button></div><div id="financeList"></div></article>
           <div class="finance-tools"><button id="financeCategories" class="today-btn">카테고리 관리</button><button id="financeSync" class="today-btn">지금 동기화</button><button id="financeExport" class="today-btn">전체 백업</button><button id="financeImport" class="today-btn">백업 불러오기</button><input id="financeImportFile" type="file" accept="application/json,.json" hidden></div>
           <p class="finance-status" id="financeStatus" role="status">가계부 저장소 확인 중…</p>
-          <p class="feature-help">합계 = 수입 − 지출 − 저축·투자. 실제 은행 잔액이 아닌, 입력한 기록의 합계입니다.<br>삭제·수정 이력은 보관됩니다. 오프라인 기록은 연결 후 동기화되며, 브라우저 데이터 삭제 전에는 전체 백업을 보관하세요.</p>
+          <p class="feature-help">합계 = 수입 − 지출 − 저축/투자. 실제 은행 잔액이 아닌, 입력한 기록의 합계입니다.<br>삭제/수정 이력은 보관됩니다. 오프라인 기록은 연결 후 동기화되며, 브라우저 데이터 삭제 전에는 전체 백업을 보관하세요.</p>
         </div>
       </section>
 
       <section class="main-view health-view" id="soberView">
-        <div class="meal-toolbar"><div><span class="review-eyebrow">ONE DAY AT A TIME</span><h1 class="review-title">Sober</h1><p class="feature-help">2026.09.23 — 2027.09.22 · 365일 금주 기록</p></div><button class="today-btn" id="soberToday">오늘로 이동</button></div>
-        <div class="health-scroll"><div id="soberSummary" class="dashboard-metrics"></div><p class="feature-help">한 번 누르면 금주 ✓ · 한 번 더 누르면 음주 − · 다시 누르면 미기록<br>빈 동그라미는 미기록입니다. 미래 날짜는 기록할 수 없어요.</p><div id="soberCalendar"></div></div>
+        <div class="meal-toolbar"><div><span class="review-eyebrow">ONE DAY AT A TIME</span><h1 class="review-title">Sober</h1><p class="feature-help">2026.09.23 - 2027.09.22 / 365일 금주 기록</p></div><button class="today-btn" id="soberToday">오늘로 이동</button></div>
+        <div class="health-scroll"><div id="soberSummary" class="dashboard-metrics"></div><p class="feature-help">한 번 누르면 금주 ✓ / 한 번 더 누르면 음주 − / 다시 누르면 미기록<br>빈 동그라미는 미기록입니다. 미래 날짜는 기록할 수 없어요.</p><div id="soberCalendar"></div></div>
       </section>
       <section class="main-view health-view" id="workoutView">
-        <div class="meal-toolbar"><div><span class="review-eyebrow">DAILY MOVEMENT</span><h1 class="review-title">운동</h1><p class="feature-help">오늘 움직인 만큼, 한 줄씩 남겨보세요.</p></div><button class="add-btn" id="workoutAdd">+ 한 줄 추가</button></div>
+        <div class="meal-toolbar"><div><span class="review-eyebrow">ONE MORE SET</span><h1 class="review-title">운동</h1><p class="feature-help">어제보다 조금씩. 오늘도 한 세트부터.</p></div><button class="add-btn" id="workoutAdd">운동 시작</button></div>
         <div class="health-scroll">
           <article class="review-panel workout-week">
             <span class="review-panel-kicker">WEEKLY MOVEMENT</span><h2>주간 운동 목표</h2>
@@ -278,14 +278,19 @@
             <label class="workout-target-label">주간 목표 <select id="workoutTarget"><option value="0">목표 선택</option><option value="1">주 1회</option><option value="2">주 2회</option><option value="3">주 3회</option><option value="4">주 4회</option><option value="5">주 5회</option><option value="6">주 6회</option><option value="7">주 7회</option></select></label>
             <strong id="workoutProgress" aria-live="polite"></strong><div class="routine-review-bar"><span id="workoutProgressBar"></span></div>
             <p id="workoutProgressNote" class="feature-help"></p><div id="workoutDays" class="workout-days"></div>
-            <p class="feature-help">운동 내용을 쓴 날을 1회로 계산해요. 같은 날 여러 줄도 1회입니다.</p>
+            <p class="feature-help">한 세트라도 완료한 날은 1회. 이전 메모 기록도 유지돼요.</p>
           </article>
-          <div class="finance-filter"><button class="nav-btn" id="workoutPrev" aria-label="이전 날짜">←</button><input id="workoutDate" type="date" aria-label="운동 기록 날짜"><button class="nav-btn" id="workoutNext" aria-label="다음 날짜">→</button><button class="today-btn" id="workoutToday">오늘</button></div><p class="feature-help">장소 · 운동 내용 · 횟수(반복 수)를 기록해요. 횟수는 비워도 됩니다.</p><div id="workoutRows"></div><p id="workoutStatus" class="finance-status" role="status">자동 저장</p></div>
+          <div class="finance-filter"><button class="nav-btn" id="workoutPrev" aria-label="이전 날짜">←</button><input id="workoutDate" type="date" aria-label="운동 기록 날짜"><button class="nav-btn" id="workoutNext" aria-label="다음 날짜">→</button><button class="today-btn" id="workoutToday">오늘</button></div>
+          <div id="workoutQuickStart" class="workout-quick-start"></div>
+          <div id="workoutRows"></div><div id="workoutRecap" class="workout-recap" aria-live="polite"></div>
+          <p id="workoutStatus" class="finance-status" role="status">입력 즉시 자동 저장 / 세트를 마치면 ○를 눌러주세요.</p>
+          <details class="workout-growth"><summary>나의 변화 <span>지난 기록과 비교</span></summary><div id="workoutHistory"></div></details>
+        </div>
       </section>
 
       <section class="main-view meal-view" id="mealView">
         <div class="meal-toolbar">
-          <div><span class="review-eyebrow">MEAL TRACKER</span><h1 class="review-title">식단관리</h1><p class="feature-help">끼니는 데일리에서 기록하고, 주·월 단위로 흐름을 확인해요.</p></div>
+          <div><span class="review-eyebrow">MEAL TRACKER</span><h1 class="review-title">식단관리</h1><p class="feature-help">끼니는 데일리에서 기록하고, 주/월 단위로 흐름을 확인해요.</p></div>
           <button id="mealPresetOpen" class="today-btn" type="button">내 요리 설정</button>
         </div>
         <div class="meal-scroll">
@@ -317,7 +322,7 @@
               <p class="quote-placeholder">버튼을 눌러 오늘 아침의 문장을 만나보세요.</p>
             </div>
             <div class="quote-card-footer">
-              <span class="quote-origin" id="quoteOrigin">GREEK · ROMAN STOICISM</span>
+              <span class="quote-origin" id="quoteOrigin">GREEK / ROMAN STOICISM</span>
               <span class="quote-source-note">고전 철학에서 영감을 받아 쓴 MINISH 문장 아카이브</span>
             </div>
           </article>
@@ -326,7 +331,7 @@
             <span class="quote-btn-spark">↻</span>
             <span id="quoteGenerateLabel">오늘의 문장 보기</span>
           </button>
-          <p class="quote-state" id="quoteState">오프라인 문장 아카이브 · 네트워크 연결 없음</p>
+          <p class="quote-state" id="quoteState">오프라인 문장 아카이브 / 네트워크 연결 없음</p>
         </div>
       </section>
 
@@ -335,13 +340,13 @@
 
   <div class="modal-overlay" id="financeOverlay"><div class="modal finance-modal" role="dialog" aria-modal="true" aria-labelledby="financeFormTitle">
     <h2 class="modal-title" id="financeFormTitle">기록 만들기</h2>
-    <div class="finance-types" id="financeTypes"><button type="button" data-type="income">+ 수입</button><button type="button" data-type="expense">− 지출</button><button type="button" data-type="investment">* 저축·투자</button></div>
+    <div class="finance-types" id="financeTypes"><button type="button" data-type="income">+ 수입</button><button type="button" data-type="expense">− 지출</button><button type="button" data-type="investment">* 저축/투자</button></div>
     <form id="financeForm" hidden>
       <label class="sync-field"><span>날짜</span><input class="modal-input" id="financeDate" type="date" required></label>
       <label class="sync-field"><span>카테고리</span><select class="modal-input" id="financeCategory" required></select></label>
       <div class="finance-inline-category"><input class="modal-input" id="financeNewCategory" placeholder="새 카테고리 이름" maxlength="40" aria-label="새 카테고리 이름"><button class="today-btn" id="financeAddCategory" type="button">추가</button></div>
       <label class="sync-field"><span>어떤 돈인가요?</span><input class="modal-input" id="financeNote" maxlength="160" placeholder="예: 점심, 급여, 적금" required></label>
-      <label class="sync-field"><span>금액 · 원</span><input class="modal-input" id="financeAmount" inputmode="numeric" pattern="[0-9,]+" placeholder="0" required></label>
+      <label class="sync-field"><span>금액 / 원</span><input class="modal-input" id="financeAmount" inputmode="numeric" pattern="[0-9,]+" placeholder="0" required></label>
       <button class="modal-btn confirm finance-save" id="financeSave" type="submit">저장</button>
     </form>
     <p id="financeFormMessage" class="finance-status" role="status"></p><button class="sync-close" id="financeClose" type="button">닫기</button>
@@ -455,7 +460,7 @@
         </label>
         <div class="modal-actions sync-auth-actions">
           <button class="modal-btn cancel" id="syncSignup" type="button">계정 만들기</button>
-          <button class="modal-btn confirm" id="syncLogin" type="button">로그인 · 동기화</button>
+          <button class="modal-btn confirm" id="syncLogin" type="button">로그인 / 동기화</button>
         </div>
       </div>
 
@@ -511,10 +516,10 @@
   </div>
 
   <script src="supabase-config.js?v=4"></script>
-  <script src="minish-core.js?v=13"></script>
-  <script src="platform.js?v=8"></script>
-  <script src="renderer.js?v=13"></script>
-  <script src="health.js?v=13"></script>
-  <script src="finance.js?v=13"></script>
+  <script src="minish-core.js?v=14"></script>
+  <script src="platform.js?v=9"></script>
+  <script src="renderer.js?v=14"></script>
+  <script src="health.js?v=14"></script>
+  <script src="finance.js?v=14"></script>
 </body>
 </html>

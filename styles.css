@@ -7,7 +7,7 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   MINISH TRACKER — Spotify-Grade Dark Theme
+   MINISH TRACKER - Spotify-Grade Dark Theme
    Font: Plus Jakarta Sans (Google Fonts) → system fallback if offline
    ──────────────────────────────────────────────────────────────── */
 
@@ -42,7 +42,7 @@
   --titlebar-h:    32px;
 
   /* ── Typography ──────────────────────────────── */
-  --font: 'Pretendard', 'Apple SD Gothic Neo', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font: 'Pretendard', sans-serif;
 
   /* ── Shadows ─────────────────────────────────── */
   --shadow-sm:  0 2px 10px rgba(41, 91, 155, 0.09);
@@ -898,7 +898,7 @@ body {
   border-color: rgba(255,255,255,0.18) !important;
 }
 
-/* Rest day that has a status recorded — show but non-interactive */
+/* Rest day that has a status recorded - show but non-interactive */
 .status-btn.rest-recorded {
   opacity: 0.45 !important;
   border: none !important;
@@ -911,7 +911,7 @@ body {
 
 .status-btn.rest-recorded::after { display: none; }
 
-/* Weekly target reached — keep recorded cells editable, lock empty cells only */
+/* Weekly target reached - keep recorded cells editable, lock empty cells only */
 .status-btn.goal-locked {
   background: rgba(255,255,255,0.018) !important;
   border: 1px solid rgba(255,255,255,0.045) !important;
@@ -1407,7 +1407,7 @@ body {
 
 
 /* ═══════════════════════════════════════════════
-   MINISH LIGHT — White & Blue Brand Theme
+   MINISH LIGHT - White & Blue Brand Theme
    ══════════════════════════════════════════════ */
 
 body {
@@ -2123,7 +2123,7 @@ body {
   top: 24px;
   left: 38px;
   color: rgba(47, 125, 246, 0.15);
-  font-family: Georgia, serif;
+  font-family: var(--font);
   font-size: 88px;
   line-height: 1;
 }
@@ -2987,6 +2987,55 @@ body {
   .workout-row [data-workout-field="note"] { grid-column:1/-1; grid-row:2; }
   .workout-row [data-workout-field="count"] { grid-column:2; }
 }
+
+.workout-week { padding:18px 20px; }
+.workout-week h2,.workout-week .review-panel-kicker { display:none; }
+.workout-week #workoutWeekRange { margin:0; }
+.workout-target-label { margin:8px 0; justify-content:space-between; }
+.workout-days { margin:10px 0; }
+.workout-days span { padding:5px 0; }
+.workout-quick-start { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:12px 0 18px; }
+.workout-quick-start>span { font-size:11px; color:#637b9b; }
+.workout-quick-start button { max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+.workout-card.workout-row { display:block; padding:18px; margin:0 0 14px; border-radius:16px; }
+.workout-card-head { display:grid; grid-template-columns:minmax(0,1fr) 100px; gap:10px; }
+.workout-card-head input { font-weight:700; background:white; }
+.workout-previous { color:#667f9e; font-size:11px; margin:12px 0; line-height:1.5; overflow-wrap:anywhere; }
+.workout-set,.workout-set-labels { display:grid; grid-template-columns:32px minmax(0,1fr) minmax(0,1fr) 44px 24px; gap:8px; align-items:center; text-align:center; }
+.workout-set-labels { color:#70829b; font-size:10px; margin:14px 0 6px; }
+.workout-set { margin:7px 0; font-size:12px; }
+.workout-set input { text-align:center; min-height:44px; }
+.workout-set.is-done input { background:#edf6ff; color:#245eae; }
+.set-check { width:44px; height:44px; border:1px solid #bed3ee; border-radius:12px; color:#4a77ad; background:#f5f9ff; font-size:22px; cursor:pointer; }
+.is-done .set-check { color:white; background:#377fea; border-color:#377fea; }
+.set-remove,.workout-delete { border:0; background:none; color:#7a899e; cursor:pointer; }
+.set-remove { min-height:44px; font-size:19px; }
+.workout-delete { font-size:10px; padding:8px 0; }
+.workout-card-foot { display:flex; align-items:center; gap:12px; margin-top:12px; }
+.workout-card-foot span { margin-right:auto; font-size:11px; color:#637b9b; }
+.workout-recap:not(:empty) { padding:18px; border-radius:14px; background:linear-gradient(120deg,#e7f1ff,#f7fbff); color:#255caa; }
+.workout-recap strong { font-size:15px; }.workout-recap p { margin-top:6px; font-size:11px; }
+.workout-empty { text-align:center; padding:30px 12px; color:#41648e; }.workout-empty p { font-size:12px; margin-top:8px; }
+.workout-growth { border-top:1px solid #dce7f6; padding:18px 0; margin-top:12px; }
+.workout-growth>summary { cursor:pointer; font-size:14px; font-weight:700; color:#284e7d; }.workout-growth>summary span { font-size:11px; font-weight:400; color:#7388a3; margin-left:8px; }
+.workout-history-item { padding:16px 0; border-bottom:1px solid #e3ebf7; font-size:12px; }.workout-history-item>span { float:right; }.workout-history-item small { display:block; margin:7px 0; color:#577ba8; }.workout-history-item details { font-size:11px; color:#70829b; }.workout-history-item p { margin:8px 0; overflow-wrap:anywhere; }
+.workout-legacy-count { display:flex; align-items:center; gap:12px; font-size:12px; }.workout-legacy-count input { max-width:100px; }
+@media(max-width:760px) { .workout-card.workout-row { padding:12px; }.workout-card-head { grid-template-columns:minmax(0,1fr) 90px; }.workout-set,.workout-set-labels { grid-template-columns:24px minmax(0,1fr) minmax(0,1fr) 44px 20px; gap:5px; } }
+
+.workout-week { padding:14px 18px; }
+.workout-week #workoutWeekRange { font-size:10px; }
+.workout-week .workout-target-label { margin:6px 0; }
+.workout-week select { padding:4px 8px; }
+.workout-week #workoutProgress { font-size:18px; margin-bottom:8px; }
+.workout-week #workoutProgressNote { margin:6px 0; font-size:11px; }
+.workout-week>p:last-child { font-size:10px; margin:0; }
+.workout-days { margin:8px 0; }
+.workout-days span { display:flex; align-items:center; justify-content:center; gap:5px; padding:6px 0; }
+.workout-days b { margin:0; }
+.workout-card-head [data-workout-field="note"] { grid-column:auto; grid-row:auto; }
+
+/* One typeface across every app surface, including controls and SVG charts. */
+body, body *, body *::before, body *::after { font-family:var(--font) !important; }
 
 /* Keep taps at the current scale, while retaining scrolling and pinch zoom. */
 html { touch-action: manipulation; }
